@@ -69,7 +69,8 @@ python3 model.py      # 解析解自检
 python3 solvers.py    # 求解器自检
 python3 analysis.py   # 收敛阶速查（期望斜率 ≈ 1 / 2 / 4）
 python3 experiments/run_all.py  # 跑完整 45 组实验，保存 data/*.csv
-python3 plots.py                # 当前绘图入口；CSV-only 入口将在下一提交加入
+python3 figures/make_figures.py # 仅读取 CSV，生成 paper_figures/ 下 6 张图
+python3 plots.py                # 兼容旧命令，同样仅读取 CSV
 ```
 
 只用 numpy/matplotlib；未用 scipy 的 ODE 求解器（解析解为手写闭式）。
@@ -90,7 +91,8 @@ solvers.py      Euler / velocity-Verlet-type / RK4 + 自检
 analysis.py     误差指标、收敛阶、CPU 计时、全矩阵实验
 experiments/run_all.py  保存完整实验矩阵及原有绘图输入
 data/           CSV 数据、列定义与运行环境（见 data/README.md）
-plots.py        生成 paper_figures/ 6 张图
+figures/make_figures.py  仅读取 data/*.csv，生成原有 6 张图
+plots.py        向后兼容的薄封装（调用 figures/make_figures.py）
 paper_figures/  fig1–fig6（见下）
 README.md       本文件
 ```
@@ -105,3 +107,5 @@ README.md       本文件
 | fig6 | h=0.5 大步长稳定性：Euler 发散，另两者有界但失真 |
 
 数据列定义及既有相位指标实现的说明见 [data/README.md](data/README.md)。
+
+图像生成不再运行求解器；可直接使用仓库中的 CSV 重绘。重新运行实验后，CPU 计时会变化，因此 fig5 随测量结果变化。原有 fig6 的 h=0.5 轨道一并存入 CSV，没有新增稳定性扫描。
