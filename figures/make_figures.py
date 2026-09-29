@@ -9,6 +9,7 @@ Generates paper_figures/:
   fig5_cost_vs_error.png           -- CPU time vs E_inf (log-log), 3 panels
   fig6_stability_h05.png           -- zeta=0.1, h=0.5: Euler blows up, others survive
   fig7_stability_boundary.png      -- zeta=0.1: envelope error near h=0.2
+  fig8_energy_drift.png            -- zeta=0, h=0.1: relative energy error vs t
 
 Run:  python3 figures/make_figures.py (reads only saved CSV data)
 """
@@ -30,6 +31,8 @@ def _read_csv(name):
     path = DATA / name
     if not path.is_file():
         runner = ("stability_scan.py" if name == "stability_scan.csv" else "run_all.py")
+        if name in ("energy_drift.csv", "energy_curves.csv"):
+            runner = "energy_drift.py"
         raise FileNotFoundError(
             f"Missing {path}. Run python3 experiments/{runner} first.")
     with path.open(newline="", encoding="utf-8") as stream:
@@ -190,6 +193,35 @@ def _stability_boundary():
     plt.close(fig)
 
 
+def _energy_drift():
+    """Render fig8 from the two standalone energy CSVs only."""
+    maxima = {row["method"]: float(row["max_rel_E_err"])
+              for row in _read_csv("energy_drift.csv") if float(row["h"]) == 0.1}
+    curves = {}
+    for row in _read_csv("energy_curves.csv"):
+        if float(row["h"]) == 0.1:
+            curves.setdefault(row["method"], []).append((float(row["t"]), float(row["E"])))
+    labels = {"euler": "Euler", "verlet": "Velocity-Verlet-type", "rk4": "RK4"}
+    fig, ax = plt.subplots(figsize=(8, 4.5))
+    for method, label in labels.items():
+        t, energy = np.array(sorted(curves[method])).T
+        e0 = energy[0]
+        if t[0] != 0.0 or e0 != 0.5:
+            raise ValueError(f"Invalid initial energy sample for {method}")
+        error = np.abs(energy - e0) / e0
+        # Zero error (including t=0) is undefined on a logarithmic axis.
+        error = np.ma.masked_less_equal(error, 0.0)
+        ax.semilogy(t, error, color=COLORS[method], lw=1.2,
+                    label=f"{label} (max={maxima[method]:.2e})")
+    ax.set_xlabel("t")
+    ax.set_ylabel(r"Relative energy error $|E(t)-E_0|/E_0$")
+    ax.set_title(r"Undamped energy conservation: $\zeta=0$, $h=0.1$, $E_0=0.5$")
+    ax.legend(fontsize=9)
+    fig.tight_layout()
+    fig.savefig(OUTDIR / "fig8_energy_drift.png")
+    plt.close(fig)
+
+
 def main():
     results, labels, zetas, h_values, trajectories, exact = _load_inputs()
     OUTDIR.mkdir(parents=True, exist_ok=True)
@@ -207,6 +239,7 @@ def main():
     _cost_vs_error(results, labels, zetas, h_values)
     _stability(labels, trajectories, exact)
     _stability_boundary()
+    _energy_drift()
     print("Done. Figures in paper_figures/:")
 
     import os

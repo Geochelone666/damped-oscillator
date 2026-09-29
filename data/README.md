@@ -79,3 +79,34 @@ at the boundary. The measured errors run from 0.799355 to 1.248420 and agree
 with the amplification-factor prediction to within 4e-5 absolute error.
 Verlet-type errors increase smoothly from 0.012788 to 0.031739; RK4 errors
 remain below 8e-5, with small nonmonotonic variations from the peak fit.
+
+## energy_drift.csv and energy_curves.csv
+
+Regenerate separately with `python3 experiments/energy_drift.py`, then run
+`python3 figures/make_figures.py` to render fig8 from these two CSVs only.
+This experiment uses zeta=0, x(0)=1, v(0)=0, t in [0,100], all three methods,
+and h in {0.2, 0.1, 0.05}. The exact conserved energy is
+E=(x*x+v*v)/2=E0=0.5. It does not run the zeta=0.5 experiment.
+
+`energy_drift.csv` contains nine rows, one per (method,h):
+
+| Column | Meaning |
+| --- | --- |
+| method | Solver key: euler, verlet, or rk4. |
+| h | Integration time step. |
+| max_rel_E_err | max(abs(E-E0)/E0) over every integration step, before subsampling. |
+| final_rel_E_err | abs(E(100)-E0)/E0 (unsigned). |
+
+`energy_curves.csv` has columns `method,h,t,E` and 1809 rows: 201 samples
+per run, including t=0 and t=100. Samples use rounded, evenly spaced solver
+indices without interpolation (spacing can alternate at h=0.2).
+Fig8 shows abs(E-E0)/E0 for h=0.1 on a logarithmic y-axis; exact zeros,
+including the initial point, are masked rather than assigned an artificial floor.
+The legend reports maxima from the full integration grids.
+
+Euler has E_n/E0=(1+h*h)^n: secular growth is exponential over long runs,
+with linear approximation (E_n-E0)/E0 approximately t*h only when t*h is
+small. At zeta=0 the Verlet-type scheme reduces to velocity Verlet, with
+bounded oscillatory relative energy error no larger than h*h/4. RK4 has
+small secular energy loss; its per-step energy multiplier is
+1-h^6/72+h^8/576. Both have errors orders of magnitude below Euler here.
