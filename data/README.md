@@ -1,7 +1,7 @@
 # Saved benchmark data
 
 Regenerate with `python3 experiments/run_all.py` from the repository root.
-The runner uses `analysis.full_matrix()` unchanged. All times and displacements
+The runner uses `analysis.full_matrix()` unchanged. For the original benchmark, all times and displacements
 use the original dimensionless model: x(0)=1, v(0)=0, t in [0,20].
 
 ## metrics.csv
@@ -52,3 +52,30 @@ when experiments are rerun; figure generation from saved CSVs is repeatable.
 
 Python 3.12.3; NumPy 1.26.4; Matplotlib 3.6.3.
 The authoritative versions for the latest export are in `environment.csv`.
+
+## stability_scan.csv
+
+Regenerate separately with `python3 experiments/stability_scan.py`, then run
+`python3 figures/make_figures.py` to render fig7 from this CSV alone.
+This scan does not run the other planned experiments or change metrics.csv.
+
+Exactly 21 rows: three methods (`euler`, `verlet`, `rk4`) at zeta=0.1,
+h in {0.16, 0.18, 0.19, 0.20, 0.21, 0.22, 0.25}, x(0)=1, v(0)=0.
+Samples use a constant-h grid inside [0,40]; when 40/h is not integral,
+the last sample is floor(40/h)*h (no shortened final step).
+
+| Column | Meaning |
+| --- | --- |
+| method | Existing solver key; `verlet` is the velocity-Verlet-type variant. |
+| h | Integration time step. |
+| zeta_fit_err | abs(zeta_fit-zeta)/zeta using `analysis.envelope_decay_rate`, with parabolically refined positive peaks. |
+| E_inf | Maximum absolute displacement error against the analytic solution on the retained grid. |
+
+Euler's amplification modulus is sqrt(1-2*zeta*h+h*h), giving the discrete
+decay rate -log(1-2*zeta*h+h*h)/(2*h). Thus its relative decay error varies
+continuously through 1 (100%) at h=0.2: the numerical envelope is neutral
+there and grows for h>0.2. This metric does **not** jump by orders of magnitude
+at the boundary. The measured errors run from 0.799355 to 1.248420 and agree
+with the amplification-factor prediction to within 4e-5 absolute error.
+Verlet-type errors increase smoothly from 0.012788 to 0.031739; RK4 errors
+remain below 8e-5, with small nonmonotonic variations from the peak fit.

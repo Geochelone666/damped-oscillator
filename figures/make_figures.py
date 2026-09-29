@@ -8,6 +8,7 @@ Generates paper_figures/:
   fig4_convergence_loglog.png      -- E_inf vs h (log-log), 3 panels, slope 1/2/4 guides
   fig5_cost_vs_error.png           -- CPU time vs E_inf (log-log), 3 panels
   fig6_stability_h05.png           -- zeta=0.1, h=0.5: Euler blows up, others survive
+  fig7_stability_boundary.png      -- zeta=0.1: envelope error near h=0.2
 
 Run:  python3 figures/make_figures.py (reads only saved CSV data)
 """
@@ -28,8 +29,9 @@ OUTDIR = ROOT / "paper_figures"
 def _read_csv(name):
     path = DATA / name
     if not path.is_file():
+        runner = ("stability_scan.py" if name == "stability_scan.csv" else "run_all.py")
         raise FileNotFoundError(
-            f"Missing {path}. Run python3 experiments/run_all.py first.")
+            f"Missing {path}. Run python3 experiments/{runner} first.")
     with path.open(newline="", encoding="utf-8") as stream:
         return list(csv.DictReader(stream))
 
@@ -167,6 +169,27 @@ def _stability(labels, trajectories, exact):
     plt.close(fig)
 
 
+def _stability_boundary():
+    """Render fig7 using only the standalone stability scan CSV."""
+    methods = {}
+    for row in _read_csv("stability_scan.csv"):
+        methods.setdefault(row["method"], []).append(
+            (float(row["h"]), float(row["zeta_fit_err"])))
+    labels = {"euler": "Euler", "verlet": "Velocity-Verlet-type", "rk4": "RK4"}
+    fig, ax = plt.subplots(figsize=(8, 4.5))
+    for method, rows in methods.items():
+        h, error = np.array(sorted(rows)).T
+        ax.semilogy(h, error, "o-", color=COLORS[method], label=labels[method])
+    ax.axvline(0.2, color="0.3", linestyle="--", label="theory: h=2ζ")
+    ax.set_xlabel("step size h")
+    ax.set_ylabel(r"Envelope decay error $|\zeta_{\mathrm{fit}}-\zeta|/\zeta$")
+    ax.set_title(r"Euler stability boundary: $\zeta=0.1$, $0\leq t\leq 40$")
+    ax.legend(fontsize=9)
+    fig.tight_layout()
+    fig.savefig(OUTDIR / "fig7_stability_boundary.png")
+    plt.close(fig)
+
+
 def main():
     results, labels, zetas, h_values, trajectories, exact = _load_inputs()
     OUTDIR.mkdir(parents=True, exist_ok=True)
@@ -183,6 +206,7 @@ def main():
     _convergence(results, labels, zetas, h_values)
     _cost_vs_error(results, labels, zetas, h_values)
     _stability(labels, trajectories, exact)
+    _stability_boundary()
     print("Done. Figures in paper_figures/:")
 
     import os
