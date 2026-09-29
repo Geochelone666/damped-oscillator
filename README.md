@@ -68,7 +68,8 @@ pip install numpy matplotlib
 python3 model.py      # 解析解自检
 python3 solvers.py    # 求解器自检
 python3 analysis.py   # 收敛阶速查（期望斜率 ≈ 1 / 2 / 4）
-python3 plots.py      # 跑完整 45 组实验，生成 paper_figures/ 下 6 张图
+python3 experiments/run_all.py  # 跑完整 45 组实验，保存 data/*.csv
+python3 plots.py                # 当前绘图入口；CSV-only 入口将在下一提交加入
 ```
 
 只用 numpy/matplotlib；未用 scipy 的 ODE 求解器（解析解为手写闭式）。
@@ -87,6 +88,8 @@ python3 plots.py      # 跑完整 45 组实验，生成 paper_figures/ 下 6 张
 model.py        解析解 + 自检
 solvers.py      Euler / velocity-Verlet-type / RK4 + 自检
 analysis.py     误差指标、收敛阶、CPU 计时、全矩阵实验
+experiments/run_all.py  保存完整实验矩阵及原有绘图输入
+data/           CSV 数据、列定义与运行环境（见 data/README.md）
 plots.py        生成 paper_figures/ 6 张图
 paper_figures/  fig1–fig6（见下）
 README.md       本文件
@@ -100,3 +103,5 @@ README.md       本文件
 | fig4 | E_inf vs h log-log，三阻尼分栏，含 1/2/4 阶参考线 |
 | fig5 | CPU 时间 vs E_inf（成本-精度） |
 | fig6 | h=0.5 大步长稳定性：Euler 发散，另两者有界但失真 |
+
+数据列定义及既有相位指标实现的说明见 [data/README.md](data/README.md)。

@@ -1,0 +1,4 @@
+method,label
+euler,Euler (1st order)
+verlet,Velocity-Verlet-type (2nd order)
+rk4,RK4 (4th order)
