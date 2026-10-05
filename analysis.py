@@ -4,8 +4,8 @@ Error metrics and convergence analysis for the damped-oscillator benchmark.
 Metrics per (method, zeta, h):
   * E_inf  = max |x_n - x(t_n)|            (worst-point displacement error)
   * E_RMS  = rms  |x_n - x(t_n)|            (average displacement error)
-  * phase_err (underdamped only): offset of the first positive peak time
-      between the numerical and exact solutions (sub-grid refined).
+  * phase_err (underdamped only): peak-time drift per oscillation period
+      relative to the exact solution (sub-grid refined).
   * envelope_err (underdamped only): |zeta_fit - zeta| / zeta, where zeta_fit
       is the decay rate from a least-squares fit of ln(peak amplitudes).
   * cpu_s: wall time of solve() (minimum of 3 repeats).
@@ -63,7 +63,7 @@ def phase_error(t_num, x_num, zeta):
     if len(t_peaks) < 2:
         return np.nan
     k = np.arange(1, len(t_peaks) + 1)
-    _, b = np.polyfit(k, t_peaks - k * T, 1)
+    b, _ = np.polyfit(k, t_peaks - k * T, 1)
     return b
 
 
