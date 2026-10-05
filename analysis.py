@@ -48,9 +48,13 @@ def _local_maxima(t, x):
 def phase_error(t_num, x_num, zeta):
     """Dispersion (frequency) error per oscillation period (underdamped only).
 
-    Exact peak times follow from v(t) = -(1/wd) e^{-zt} sin(wd t) = 0, i.e.
-    t_k = k*T with T = 2*pi/wd; maxima sit at integer k >= 1. A frequency
-    error makes numerical peak times drift linearly with k, so we fit
+    With z = zeta and wd = sqrt(1 - z**2), differentiating the exact solution
+    gives v(t) = -(wd + z**2/wd) e^{-zt} sin(wd t). Thus v(t) = 0 at
+    t = k*T/2, with T = 2*pi/wd. The initial point is a maximum since
+    x(0) = 1, v(0) = 0 and x''(0) = -1. Extrema alternate, so maxima
+    occur at even half-periods, t_k = k*T.
+    We use the maxima with integer k >= 1. A frequency error makes numerical
+    peak times drift linearly with k, so we fit
         t_num,k - k*T = a + b*k
     and return b, the drift per period in seconds. (Using only the first
     peak's offset would conflate one period of drift with an initial

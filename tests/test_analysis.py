@@ -4,10 +4,25 @@ import unittest
 
 import numpy as np
 
-from analysis import phase_error
+from analysis import _local_maxima, phase_error
+from model import x_exact
 
 
 class PhaseErrorTests(unittest.TestCase):
+    def test_exact_maxima_occur_at_integer_periods(self):
+        zeta = 0.2
+        period = 2.0 * np.pi / np.sqrt(1.0 - zeta**2)
+        h = 0.01
+        t = np.arange(0.0, 4.5 * period, h)
+        t_peaks, _ = _local_maxima(t, x_exact(t, zeta))
+
+        # The initial maximum is an endpoint; interior maxima recur every
+        # full period, while the intervening half-period extrema are minima.
+        self.assertEqual(len(t_peaks), 4)
+        np.testing.assert_allclose(
+            t_peaks, np.arange(1, 5) * period, atol=h, rtol=0.0,
+        )
+
     def test_period_drift_is_independent_of_initial_peak_offset(self):
         # Symmetric sampled peaks have exact parabolic vertices. Their period
         # is 6 seconds, while their initial offset varies independently.
