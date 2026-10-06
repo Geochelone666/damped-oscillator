@@ -61,7 +61,8 @@ def solve_verlet(zeta, h, t_end):
         v_pred = v[k] + h * a          # predictor for the damping term
         a_new = _accel(x[k + 1], v_pred, zeta)
         v[k + 1] = v[k] + 0.5 * h * (a + a_new)
-        a = a_new
+        # The next step starts from the corrected velocity, not v_pred.
+        a = _accel(x[k + 1], v[k + 1], zeta)
     return t, x, v
 
 
