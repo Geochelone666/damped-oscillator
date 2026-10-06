@@ -23,11 +23,10 @@ zeta in {0.1, 1, 2}, and steps h in {0.2, 0.1, 0.05, 0.025, 0.0125}.
 Phase and envelope values are `nan` for critical/overdamped cases, where these
 oscillatory metrics do not apply, or when a fit cannot be computed.
 
-**Existing phase-metric caveat:** `analysis.phase_error()` documents the slope
-of numerical peak-time drift versus peak index, but its `_, b = np.polyfit(...)`
-assignment returns the fitted intercept. The requested `phase_slope` column
-retains that existing result verbatim; it must not be interpreted as a measured
-slope. No science code was changed in this pipeline refactor.
+**Phase metric:** `analysis.phase_error()` returns the fitted slope of
+numerical peak-time drift versus peak index (seconds per period). The saved
+`phase_slope` values have been refreshed using that implementation. With only
+three positive peaks over [0,20], small drifts can be dominated by peak-fit noise.
 
 ## Figure inputs
 

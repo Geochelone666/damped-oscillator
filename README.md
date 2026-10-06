@@ -43,7 +43,7 @@ x'' + 2ζx' + x = 0,   x(0) = 1, v(0) = 0
 
 标准 velocity-Verlet 是为**加速度仅依赖位置**（a = a(x)，保守系统）推导的；它在无阻尼谐振子上有辛性质、长期能量行为好。本问题的阻尼项含速度（a = a(x, v)），**不能直接套用标准 Verlet**。此处采用的变体用显式预测 `v_pred` 来计算 `a_{n+1}` 中的阻尼项，因此：
 
-1. 它**不是**辛算法，不继承标准 Verlet 的长期能量守恒特性；
+1. 在有阻尼时它**不是**辛算法；ζ=0 时退化为标准 velocity Verlet，能量误差有界；
 2. 预测步对 v 只是一阶的，整体格式仍为二阶，但误差常数比保守系统的真 Verlet 大；
 3. 本文中统一标注为 **"velocity-Verlet-type scheme for velocity-dependent damping"**，不简称为 Verlet。
 
@@ -63,8 +63,12 @@ x'' + 2ζx' + x = 0,   x(0) = 1, v(0) = 0
 
 ## 5. 如何复现
 
+从仓库根目录运行；先创建虚拟环境（避免系统 Python 的 externally-managed 限制）：
+
 ```bash
-pip install numpy matplotlib
+python3 -m venv --system-site-packages .venv
+source .venv/bin/activate
+python3 -m pip install numpy matplotlib
 python3 model.py      # 解析解自检
 python3 solvers.py    # 求解器自检
 python3 analysis.py   # 收敛阶速查（期望斜率 ≈ 1 / 2 / 4）
@@ -79,11 +83,11 @@ python3 plots.py                # 兼容旧命令，同样仅读取 CSV
 
 ## 6. 主要结论（2026-09-29 实测）
 
-- **收敛阶**（E_inf 的 log-log 斜率）：Euler ≈ 1.0–1.3，Verlet-type ≈ 2.0，RK4 ≈ 4.0–4.2，全部符合理论预期。ζ=0.1 时 Euler 为 1.27，系 h=0.2 尚未进入渐近区（见下条）。
-- **Euler 在欠阻尼 h=0.2 已 marginal 不稳定**：线性稳定性要求 |1+hλ|<1，对应 h<0.2；h=0.2 时数值解振幅不衰减反增，包络拟合给出 100% 衰减率误差。h=0.5 时彻底发散（见 fig6）。
-- **色散误差**：Euler 每周期快约 0.1·h 秒（一阶）；Verlet-type 与 RK4 的相位漂移在 h≤0.1 时已低于峰值检测噪声 floor，可忽略。
+- **收敛阶**（E_inf 的 log-log 斜率）：Euler ≈ 1.0–1.3，Verlet-type ≈ 2.0，RK4 ≈ 4.0–4.2，全部符合理论预期（粗步长会影响拟合）。ζ=0.1 时 Euler 为 1.27，系 h=0.2 尚未进入渐近区（见下条）。
+- **Euler 在欠阻尼 h=0.2 处于中性稳定边界**：线性稳定性要求 |1+hλ|<1，对应 h<0.2；h=0.2 时数值包络既不衰减也不增长，包络拟合给出 100% 衰减率误差。h=0.5 时彻底发散（见 fig6）。
+- **色散误差**：相位指标返回峰值时刻漂移的拟合斜率（秒/周期）；例如 ζ=0.1、h=0.2 时 Euler / Verlet-type / RK4 约为 −0.042 / −0.0083 / +0.00031。区间内仅有三个正峰，小漂移受峰值插值误差影响，不能据此断言可忽略。
 - **成本-精度**：同等 CPU 下 RK4 精度高 3–6 个量级；Verlet-type 是"性价比"中点；Euler 只在极粗精度要求下可考虑。
-- **临界/过阻尼**：三种方法行为单调干净，无振荡相关病态；RK4 在 h=0.0125 时 E_inf ~ 1e−9–1e−10，已接近双精度 floor。
+- **临界/过阻尼**：三种方法行为单调干净，无振荡相关病态；RK4 在 h=0.0125 时 E_inf ~ 1e−9–1e−10，仍明显高于双精度机器精度；这些步长未显示舍入误差平台。
 
 ## 7. 文件结构
 
