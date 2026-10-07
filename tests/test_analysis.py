@@ -1,10 +1,12 @@
 """Regression checks for per-period phase drift."""
 
+import math
 import unittest
+import warnings
 
 import numpy as np
 
-from analysis import _local_maxima, phase_error
+from analysis import _local_maxima, phase_error, run_case
 from model import x_exact
 
 
@@ -46,6 +48,23 @@ class PhaseErrorTests(unittest.TestCase):
                 x = np.zeros_like(t)
                 x[peaks] = 1.0
                 self.assertTrue(np.isnan(phase_error(t, x, 0.1)))
+
+
+class EnvelopeRelErrTests(unittest.TestCase):
+    def test_zero_damping_reports_nan_not_inf(self):
+        # zeta = 0 is a legitimate input (the undamped oscillator), but a
+        # relative error against a zero reference is undefined. run_case must
+        # report NaN instead of inf, without emitting a RuntimeWarning.
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            m = run_case("rk4", 0.0, 0.1)
+        self.assertTrue(math.isnan(m["envelope_rel_err"]))
+        self.assertAlmostEqual(m["zeta_fit"], 0.0, places=3)
+
+    def test_positive_damping_still_reports_finite_rel_err(self):
+        m = run_case("rk4", 0.1, 0.05)
+        self.assertTrue(np.isfinite(m["envelope_rel_err"]))
+        self.assertLess(m["envelope_rel_err"], 0.05)
 
 
 if __name__ == "__main__":

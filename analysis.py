@@ -8,6 +8,7 @@ Metrics per (method, zeta, h):
       relative to the exact solution (sub-grid refined).
   * envelope_err (underdamped only): |zeta_fit - zeta| / zeta, where zeta_fit
       is the decay rate from a least-squares fit of ln(peak amplitudes).
+      NaN for zeta = 0, where a relative error is undefined.
   * cpu_s: wall time of solve() (minimum of 3 repeats).
 
 Convergence order: least-squares slope of log(E_inf) vs log(h); expected
@@ -109,10 +110,13 @@ def run_case(method, zeta, h, t_end=T_END):
     if zeta < 1.0:
         metrics["phase_err"] = float(phase_error(t, x, zeta))
         zeta_fit = envelope_decay_rate(t, x)
-        metrics["envelope_rel_err"] = (
-            float(abs(zeta_fit - zeta) / zeta) if np.isfinite(zeta_fit) else np.nan
-        )
         metrics["zeta_fit"] = float(zeta_fit) if np.isfinite(zeta_fit) else np.nan
+        if zeta > 0 and np.isfinite(zeta_fit):
+            metrics["envelope_rel_err"] = float(abs(zeta_fit - zeta) / zeta)
+        else:
+            # A relative error is meaningless against a zero reference:
+            # report NaN instead of dividing by zero (which yielded inf).
+            metrics["envelope_rel_err"] = np.nan
     return metrics
 
 
