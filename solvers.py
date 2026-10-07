@@ -35,9 +35,18 @@ def _accel(x, v, zeta):
     return -x - 2.0 * zeta * v
 
 
+def _step_count(h, t_end):
+    """Validate the time interval before constructing a constant-step grid."""
+    if not np.isfinite(h) or h <= 0:
+        raise ValueError("h must be finite and positive")
+    if not np.isfinite(t_end) or t_end < 0:
+        raise ValueError("t_end must be finite and nonnegative")
+    return int(round(t_end / h))
+
+
 def solve_euler(zeta, h, t_end):
     """Explicit Euler: x_{n+1} = x_n + h*v_n ; v_{n+1} = v_n + h*a(x_n, v_n)."""
-    n = int(round(t_end / h))
+    n = _step_count(h, t_end)
     t = np.linspace(0.0, n * h, n + 1)
     x = np.empty(n + 1)
     v = np.empty(n + 1)
@@ -50,7 +59,7 @@ def solve_euler(zeta, h, t_end):
 
 def solve_verlet(zeta, h, t_end):
     """Velocity-Verlet-type scheme for velocity-dependent damping (see module docstring)."""
-    n = int(round(t_end / h))
+    n = _step_count(h, t_end)
     t = np.linspace(0.0, n * h, n + 1)
     x = np.empty(n + 1)
     v = np.empty(n + 1)
@@ -68,7 +77,7 @@ def solve_verlet(zeta, h, t_end):
 
 def solve_rk4(zeta, h, t_end):
     """Classical RK4 on y = (x, v) with y' = (v, -x - 2*zeta*v)."""
-    n = int(round(t_end / h))
+    n = _step_count(h, t_end)
     t = np.linspace(0.0, n * h, n + 1)
     x = np.empty(n + 1)
     v = np.empty(n + 1)
