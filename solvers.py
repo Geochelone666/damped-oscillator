@@ -44,8 +44,20 @@ def _step_count(h, t_end):
     return int(round(t_end / h))
 
 
+def _validate_zeta(zeta):
+    """Reject non-finite damping ratios before they silently poison a run.
+
+    NaN/inf zeta makes _accel return NaN and the solvers hand back
+    partially-NaN (x, v) arrays with no error. Negative zeta stays legal:
+    it is physically meaningful (anti-damping / energy injection).
+    """
+    if not np.isfinite(zeta):
+        raise ValueError("zeta must be finite")
+
+
 def solve_euler(zeta, h, t_end):
     """Explicit Euler: x_{n+1} = x_n + h*v_n ; v_{n+1} = v_n + h*a(x_n, v_n)."""
+    _validate_zeta(zeta)
     n = _step_count(h, t_end)
     t = np.linspace(0.0, n * h, n + 1)
     x = np.empty(n + 1)
@@ -59,6 +71,7 @@ def solve_euler(zeta, h, t_end):
 
 def solve_verlet(zeta, h, t_end):
     """Velocity-Verlet-type scheme for velocity-dependent damping (see module docstring)."""
+    _validate_zeta(zeta)
     n = _step_count(h, t_end)
     t = np.linspace(0.0, n * h, n + 1)
     x = np.empty(n + 1)
@@ -77,6 +90,7 @@ def solve_verlet(zeta, h, t_end):
 
 def solve_rk4(zeta, h, t_end):
     """Classical RK4 on y = (x, v) with y' = (v, -x - 2*zeta*v)."""
+    _validate_zeta(zeta)
     n = _step_count(h, t_end)
     t = np.linspace(0.0, n * h, n + 1)
     x = np.empty(n + 1)

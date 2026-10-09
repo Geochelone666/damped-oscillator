@@ -45,3 +45,23 @@ class TimeGridTests(unittest.TestCase):
                 np.testing.assert_array_equal(t, [0.0])
                 np.testing.assert_array_equal(x, [1.0])
                 np.testing.assert_array_equal(v, [0.0])
+
+
+class ZetaValidationTests(unittest.TestCase):
+    def test_non_finite_zeta_is_rejected(self):
+        # NaN/inf zeta silently produced partially-NaN (x, v) arrays
+        # (e.g. euler gave x=[1, 1, nan, ...]); fail fast instead.
+        for method, solver in SOLVERS.items():
+            for zeta in (np.nan, np.inf, -np.inf):
+                with self.subTest(method=method, zeta=zeta):
+                    with self.assertRaisesRegex(ValueError, "zeta must be finite"):
+                        solver(zeta, 0.1, 1.0)
+
+    def test_negative_zeta_stays_legal(self):
+        # Negative zeta is physically meaningful (anti-damping), so only
+        # non-finite values are rejected.
+        for method, solver in SOLVERS.items():
+            with self.subTest(method=method):
+                t, x, v = solver(-0.1, 0.1, 1.0)
+                self.assertTrue(np.all(np.isfinite(x)))
+                self.assertTrue(np.all(np.isfinite(v)))
