@@ -67,5 +67,25 @@ class EnvelopeRelErrTests(unittest.TestCase):
         self.assertLess(m["envelope_rel_err"], 0.05)
 
 
+class AntiDampingMetricsTests(unittest.TestCase):
+    def test_negative_damping_reports_finite_rel_err(self):
+        # Negative zeta is legal anti-damping (solvers accept it); the fitted
+        # decay rate is meaningful there, so the relative error must be a
+        # finite number normalized by |zeta|, not NaN.
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            m = run_case("rk4", -0.1, 0.05)
+        self.assertTrue(np.isfinite(m["envelope_rel_err"]))
+        self.assertLess(m["envelope_rel_err"], 1e-3)
+        self.assertAlmostEqual(m["zeta_fit"], -0.1, places=3)
+
+    def test_negative_damping_rel_err_is_nonnegative(self):
+        # Guard against a sign-flipped denominator: a relative error must
+        # never come out negative, whatever the damping sign.
+        m = run_case("euler", -0.1, 0.05)
+        self.assertTrue(np.isfinite(m["envelope_rel_err"]))
+        self.assertGreaterEqual(m["envelope_rel_err"], 0.0)
+
+
 if __name__ == "__main__":
     unittest.main()
