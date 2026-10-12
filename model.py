@@ -15,6 +15,8 @@ integrators in solvers.py are benchmarked.
 
 import numpy as np
 
+from solvers import _validate_zeta
+
 # Damping ratios used in the experiment matrix (task specification).
 ZETAS = (0.1, 1.0, 2.0)
 
@@ -31,6 +33,7 @@ def x_exact(t, zeta):
     - zeta > 1: x = ((zeta+s)*exp(r1*t) - (zeta-s)*exp(r2*t)) / (2*s),
       s = sqrt(zeta^2 - 1), r1 = -zeta + s, r2 = -zeta - s.
     """
+    _validate_zeta(zeta)
     t = np.asarray(t, dtype=float)
     if zeta < 1.0:
         wd = np.sqrt(1.0 - zeta ** 2)
@@ -45,6 +48,7 @@ def x_exact(t, zeta):
 
 def v_exact(t, zeta):
     """Exact velocity v(t) = dx/dt, obtained by differentiating x_exact."""
+    _validate_zeta(zeta)
     t = np.asarray(t, dtype=float)
     if zeta < 1.0:
         # Closed form: differentiating x(t) and using zeta^2 + wd^2 = 1 gives

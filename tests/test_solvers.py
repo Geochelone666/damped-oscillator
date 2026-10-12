@@ -4,7 +4,26 @@ import unittest
 
 import numpy as np
 
-from solvers import SOLVERS, solve_verlet
+from solvers import SOLVERS, solve, solve_verlet
+
+
+class MethodValidationTests(unittest.TestCase):
+    def test_unknown_method_lists_valid_methods(self):
+        with self.assertRaises(ValueError) as caught:
+            solve("euler2", 0.1, 0.01, 5)
+        message = str(caught.exception)
+        self.assertIn("euler2", message)
+        self.assertIn("valid methods", message)
+        for method in SOLVERS:
+            with self.subTest(method=method):
+                self.assertIn(method, message)
+
+    def test_negative_zeta_stays_legal_through_dispatch(self):
+        for method in SOLVERS:
+            with self.subTest(method=method):
+                _, x, v = solve(method, -0.1, 0.1, 1.0)
+                self.assertTrue(np.all(np.isfinite(x)))
+                self.assertTrue(np.all(np.isfinite(v)))
 
 
 class VerletTests(unittest.TestCase):

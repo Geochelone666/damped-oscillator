@@ -6,8 +6,37 @@ import warnings
 
 import numpy as np
 
-from analysis import _local_maxima, phase_error, run_case
+from analysis import _local_maxima, convergence_order, measure_cpu, phase_error, run_case
 from model import x_exact
+from solvers import SOLVERS
+
+
+class MethodValidationTests(unittest.TestCase):
+    def test_unknown_method_lists_valid_methods(self):
+        for entry, kwargs in (
+            (run_case, {"h": 0.1}),
+            (measure_cpu, {"h": 0.1}),
+            (convergence_order, {}),
+        ):
+            with self.subTest(entry=entry.__name__):
+                with self.assertRaises(ValueError) as caught:
+                    entry(method="euler2", zeta=0.1, **kwargs)
+                message = str(caught.exception)
+                self.assertIn("euler2", message)
+                self.assertIn("valid methods", message)
+                for method in SOLVERS:
+                    self.assertIn(method, message)
+
+    def test_negative_zeta_stays_legal(self):
+        for method in SOLVERS:
+            with self.subTest(method=method):
+                metrics = run_case(method, -0.1, 0.1, t_end=1.0)
+                self.assertTrue(np.isfinite(metrics["E_inf"]))
+                self.assertTrue(np.isfinite(measure_cpu(method, -0.1, 0.1, t_end=1.0)))
+                order = convergence_order(
+                    -0.1, method, h_values=(0.1, 0.05, 0.025), t_end=1.0,
+                )
+                self.assertTrue(np.isfinite(order))
 
 
 class PhaseErrorTests(unittest.TestCase):

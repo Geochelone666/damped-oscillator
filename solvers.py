@@ -52,7 +52,7 @@ def _validate_zeta(zeta):
     it is physically meaningful (anti-damping / energy injection).
     """
     if not np.isfinite(zeta):
-        raise ValueError("zeta must be finite")
+        raise ValueError(f"zeta must be finite; got {zeta!r}")
 
 
 def solve_euler(zeta, h, t_end):
@@ -124,9 +124,19 @@ SOLVER_LABELS = {
 }
 
 
+def get_solver(method):
+    """Return a solver by name, rejecting unknown methods explicitly."""
+    try:
+        return SOLVERS[method]
+    except KeyError:
+        raise ValueError(
+            f"Unknown method {method!r}; valid methods: {', '.join(SOLVERS)}"
+        ) from None
+
+
 def solve(method, zeta, h, t_end):
     """Unified entry point: solve(method, zeta, h, t_end) -> (t, x, v)."""
-    return SOLVERS[method](zeta, h, t_end)
+    return get_solver(method)(zeta, h, t_end)
 
 
 def _self_check():

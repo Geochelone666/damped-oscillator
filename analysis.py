@@ -22,7 +22,7 @@ import time
 import numpy as np
 
 from model import ZETAS, x_exact
-from solvers import SOLVERS
+from solvers import SOLVERS, get_solver
 
 T_END = 20.0
 H_VALUES = (0.2, 0.1, 0.05, 0.025, 0.0125)
@@ -91,17 +91,18 @@ def envelope_decay_rate(t_num, x_num):
 
 def measure_cpu(method, zeta, h, t_end=T_END, repeats=3):
     """Wall-clock time of one solve(); minimum over `repeats` runs."""
+    solver = get_solver(method)
     best = np.inf
     for _ in range(repeats):
         start = time.perf_counter()
-        SOLVERS[method](zeta, h, t_end)
+        solver(zeta, h, t_end)
         best = min(best, time.perf_counter() - start)
     return best
 
 
 def run_case(method, zeta, h, t_end=T_END):
     """Full metric set for one (method, zeta, h) combination."""
-    t, x, v = SOLVERS[method](zeta, h, t_end)
+    t, x, v = get_solver(method)(zeta, h, t_end)
     x_ref = x_exact(t, zeta)
     err = x - x_ref
     metrics = {
@@ -127,9 +128,10 @@ def run_case(method, zeta, h, t_end=T_END):
 
 def convergence_order(zeta, method, h_values=H_VALUES, t_end=T_END):
     """Least-squares slope of log(E_inf) vs log(h); the empirical order."""
+    solver = get_solver(method)
     hs, errs = [], []
     for h in h_values:
-        t, x, _ = SOLVERS[method](zeta, h, t_end)
+        t, x, _ = solver(zeta, h, t_end)
         errs.append(np.max(np.abs(x - x_exact(t, zeta))))
         hs.append(h)
     slope, _ = np.polyfit(np.log(hs), np.log(errs), 1)
