@@ -1,6 +1,21 @@
 """
 Error metrics and convergence analysis for the damped-oscillator benchmark.
 
+Boundary behavior at zeta = 0 (undamped limit)
+--------------------------------------------
+The exact solution is x = cos(t), v = -sin(t), with a flat envelope.
+With enough resolved peaks, accurate numerical solutions give zeta_fit near
+zero (a small numerical residual), while Euler's growing envelope gives a
+negative fitted decay rate. envelope_rel_err is always NaN, never inf:
+relative error against a zero reference is undefined. phase_err remains
+meaningful as peak-time drift per period relative to T = 2*pi; as usual,
+phase and envelope fits require at least two usable peaks, otherwise NaN.
+
+Explicit Euler pumps energy into undamped oscillations: each step multiplies
+the amplitude sqrt(x**2 + v**2) by sqrt(1 + h**2) ~ 1 + h**2/2, and the
+energy (x**2 + v**2)/2 by 1 + h**2. On long intervals, energy growth
+dominates the error. This is an inherent property of the method, not a bug.
+
 Metrics per (method, zeta, h):
   * E_inf  = max |x_n - x(t_n)|            (worst-point displacement error)
   * E_RMS  = rms  |x_n - x(t_n)|            (average displacement error)
@@ -101,7 +116,12 @@ def measure_cpu(method, zeta, h, t_end=T_END, repeats=3):
 
 
 def run_case(method, zeta, h, t_end=T_END):
-    """Full metric set for one (method, zeta, h) combination."""
+    """Full metric set for one (method, zeta, h) combination.
+
+    At zeta = 0, zeta_fit measures residual decay (negative for Euler growth),
+    envelope_rel_err is NaN, and phase_err measures drift from T = 2*pi;
+    see the module docstring for the undamped boundary contract.
+    """
     t, x, v = get_solver(method)(zeta, h, t_end)
     x_ref = x_exact(t, zeta)
     err = x - x_ref
