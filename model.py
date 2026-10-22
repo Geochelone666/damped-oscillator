@@ -67,8 +67,11 @@ def x_exact(t, zeta):
         # sqrt(1 - zeta^2) and returned NaN.
         return (1.0 + zeta * t) * np.exp(-zeta * t)
     else:
-        s, r1, r2, zms = _overdamped_roots(zeta)
-        return ((zeta + s) * np.exp(r1 * t) - zms * np.exp(r2 * t)) / (2.0 * s)
+        s, r1, _, zms = _overdamped_roots(zeta)
+        # Factor out the slow exponential and use expm1 for the root gap.
+        # Subtracting nearly equal exponentials loses digits as |zeta| -> 1.
+        gap = -np.expm1(-2.0 * s * t) / (2.0 * s)
+        return np.exp(r1 * t) * (1.0 + zms * gap)
 
 
 def v_exact(t, zeta):
@@ -84,8 +87,10 @@ def v_exact(t, zeta):
         # d/dt [(1+zeta*t)e^{-zeta*t}] = -zeta^2 * t * e^{-zeta*t}
         return -(zeta ** 2) * t * np.exp(-zeta * t)
     else:
-        s, r1, r2, zms = _overdamped_roots(zeta)
-        return ((zeta + s) * r1 * np.exp(r1 * t) - zms * r2 * np.exp(r2 * t)) / (2.0 * s)
+        s, r1, _, _ = _overdamped_roots(zeta)
+        # (zeta+s)*r1 = (zeta-s)*r2 = -1, so only the root gap remains.
+        gap = -np.expm1(-2.0 * s * t) / (2.0 * s)
+        return -np.exp(r1 * t) * gap
 
 
 def _self_check():
