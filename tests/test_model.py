@@ -65,6 +65,22 @@ class AntiDampingExactSolutionTests(unittest.TestCase):
 
 
 class LargeDampingAccuracyTests(unittest.TestCase):
+    def test_nearest_overdamped_ratios_preserve_initial_conditions(self):
+        for zeta in (np.nextafter(1.0, 2.0), np.nextafter(-1.0, -2.0)):
+            with self.subTest(zeta=zeta):
+                self.assertEqual(float(x_exact(0.0, zeta)), 1.0)
+                self.assertEqual(float(v_exact(0.0, zeta)), 0.0)
+
+    def test_nearest_overdamped_ratios_join_the_critical_solution(self):
+        t = np.array([0.0, 0.1, 0.5, 1.0, 2.0, 5.0])
+        for critical in (1.0, -1.0):
+            zeta = np.nextafter(critical, 2 * critical)
+            for exact in (x_exact, v_exact):
+                with self.subTest(zeta=zeta, exact=exact.__name__):
+                    np.testing.assert_allclose(
+                        exact(t, zeta), exact(t, critical), rtol=3e-14, atol=2e-14,
+                    )
+
     def test_overdamped_closed_form_is_accurate_for_huge_zeta(self):
         # References from the closed form in 50-digit arithmetic (mpmath).
         # The naive r1 = -zeta + sqrt(zeta^2 - 1) lost ~6 digits at 1e7.
