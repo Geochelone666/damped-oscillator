@@ -78,6 +78,10 @@ def phase_error(t_num, x_num, zeta):
     peak's offset would conflate one period of drift with an initial
     transient offset, which partially cancel for some methods.)
     """
+    if not np.isfinite(zeta) or abs(zeta) >= 1.0:
+        # wd = sqrt(1 - zeta**2) is undefined (NaN plus a RuntimeWarning)
+        # for |zeta| >= 1: there is no oscillation period to drift from.
+        raise ValueError(f"phase_error needs |zeta| < 1 (underdamped); got {zeta!r}")
     wd = np.sqrt(1.0 - zeta ** 2)
     T = 2.0 * np.pi / wd
     t_peaks, _ = _local_maxima(t_num, x_num)
@@ -130,7 +134,9 @@ def run_case(method, zeta, h, t_end=T_END):
         "E_RMS": float(np.sqrt(np.mean(err ** 2))),
         "cpu_s": measure_cpu(method, zeta, h, t_end),
     }
-    if zeta < 1.0:
+    if abs(zeta) < 1.0:
+        # Oscillatory metrics only exist for |zeta| < 1; strong anti-damping
+        # (zeta <= -1) is non-oscillatory just like zeta >= 1.
         metrics["phase_err"] = float(phase_error(t, x, zeta))
         zeta_fit = envelope_decay_rate(t, x)
         metrics["zeta_fit"] = float(zeta_fit) if np.isfinite(zeta_fit) else np.nan

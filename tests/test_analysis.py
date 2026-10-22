@@ -118,3 +118,18 @@ class AntiDampingMetricsTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PhaseErrorDomainTests(unittest.TestCase):
+    def test_phase_error_rejects_non_oscillatory_damping(self):
+        t = np.linspace(0.0, 20.0, 201)
+        for zeta in (1.0, 2.0, -1.0, -1.5, np.nan):
+            with self.subTest(zeta=zeta):
+                with self.assertRaisesRegex(ValueError, "underdamped"):
+                    phase_error(t, np.cos(t), zeta)
+
+    def test_strong_anti_damping_skips_oscillatory_metrics(self):
+        metrics = run_case("rk4", -1.5, 0.1, t_end=2.0)
+        self.assertNotIn("phase_err", metrics)
+        self.assertNotIn("envelope_rel_err", metrics)
+        self.assertTrue(np.isfinite(metrics["E_inf"]))
