@@ -1,4 +1,4 @@
 component,version
-python,3.12.3
-numpy,1.26.4
-matplotlib,3.6.3
+python,3.13.16
+numpy,2.5.4
+matplotlib,3.11.2

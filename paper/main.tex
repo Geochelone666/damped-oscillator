@@ -30,7 +30,7 @@ Using closed-form analytic solutions as reference, we measure the
 maximum displacement error $E_\infty$ over step sizes
 $h\in\{0.2,0.1,0.05,0.025,0.0125\}$ on $t\in[0,20]$.
 The observed convergence orders are $1.27/1.03/1.11$ (Euler),
-$2.02/2.00/2.00$ (Verlet-type), and $4.00/4.07/4.19$ (RK4),
+$2.02/2.10/2.20$ (Verlet-type), and $4.00/4.07/4.19$ (RK4),
 matching the theoretical orders $1$, $2$, and $4$.
 A fine scan around the Euler linear-stability boundary at $\zeta=0.1$
 shows the measured envelope-decay error crossing $100\%$ exactly at the
@@ -185,7 +185,7 @@ The fitted orders are:
 Method & $\zeta=0.1$ & $\zeta=1$ & $\zeta=2$ \\
 \midrule
 Explicit Euler & 1.27 & 1.03 & 1.11 \\
-Velocity-Verlet-type & 2.02 & 2.00 & 2.00 \\
+Velocity-Verlet-type & 2.02 & 2.10 & 2.20 \\
 RK4 & 4.00 & 4.07 & 4.19 \\
 \bottomrule
 \end{tabular}
@@ -267,7 +267,7 @@ crossing $100\%$ exactly at the theoretical boundary; the largest
 absolute deviation from the amplification-factor prediction over the
 seven step sizes is $3.1\times10^{-5}$ (at $h=0.2$ the agreement is
 $3.2\times10^{-6}$). The Verlet-type errors grow smoothly from
-$0.0128$ to $0.0317$ and RK4 stays below $8\times10^{-5}$ (its small
+$0.0065$ to $0.0160$ and RK4 stays below $8\times10^{-5}$ (its small
 nonmonotonic wiggles come from peak-fit noise, not from the integrator).
 
 \begin{figure}[htbp]
@@ -342,7 +342,7 @@ the CSV values have been refreshed to match the corrected implementation.
 A direct
 recomputation from the saved trajectories at $\zeta=0.1$, $h=0.2$ with
 parabolically refined peaks gives approximate drifts of
-$-0.042$\,s/period (Euler), $-0.0083$\,s/period (Verlet-type), and
+$-0.042$\,s/period (Euler), $-0.0097$\,s/period (Verlet-type), and
 $+0.0003$\,s/period (RK4) against the exact period $T=6.315$\,s---but
 with only three peaks in $t\in[0,20]$ these are coarse estimates, and we
 present them as such.
