@@ -24,6 +24,26 @@ from solvers import _validate_zeta
 ZETAS = (0.1, 1.0, 2.0)
 
 
+def _overdamped_roots(zeta):
+    """Return s, r1, r2 and zeta - s for |zeta| > 1 without cancellation.
+
+    r1 = -zeta + s and zeta - s subtract nearly equal numbers when |zeta|
+    is large (relative error ~ eps*zeta^2: x(t) was off by 3e-6 at
+    zeta = 1e7). Use r1*r2 = 1 and (zeta - s)(zeta + s) = 1 instead, picking
+    the non-cancelling root for either sign of zeta.
+    """
+    s = np.sqrt((zeta - 1.0) * (zeta + 1.0))
+    if zeta > 0:
+        r2 = -zeta - s
+        r1 = 1.0 / r2
+        zms = 1.0 / (zeta + s)
+    else:
+        r1 = -zeta + s
+        r2 = 1.0 / r1
+        zms = zeta - s
+    return s, r1, r2, zms
+
+
 def x_exact(t, zeta):
     """Exact displacement x(t) for the given damping ratio.
 
@@ -47,9 +67,8 @@ def x_exact(t, zeta):
         # sqrt(1 - zeta^2) and returned NaN.
         return (1.0 + zeta * t) * np.exp(-zeta * t)
     else:
-        s = np.sqrt(zeta ** 2 - 1.0)
-        r1, r2 = -zeta + s, -zeta - s
-        return ((zeta + s) * np.exp(r1 * t) - (zeta - s) * np.exp(r2 * t)) / (2.0 * s)
+        s, r1, r2, zms = _overdamped_roots(zeta)
+        return ((zeta + s) * np.exp(r1 * t) - zms * np.exp(r2 * t)) / (2.0 * s)
 
 
 def v_exact(t, zeta):
@@ -65,9 +84,8 @@ def v_exact(t, zeta):
         # d/dt [(1+zeta*t)e^{-zeta*t}] = -zeta^2 * t * e^{-zeta*t}
         return -(zeta ** 2) * t * np.exp(-zeta * t)
     else:
-        s = np.sqrt(zeta ** 2 - 1.0)
-        r1, r2 = -zeta + s, -zeta - s
-        return ((zeta + s) * r1 * np.exp(r1 * t) - (zeta - s) * r2 * np.exp(r2 * t)) / (2.0 * s)
+        s, r1, r2, zms = _overdamped_roots(zeta)
+        return ((zeta + s) * r1 * np.exp(r1 * t) - zms * r2 * np.exp(r2 * t)) / (2.0 * s)
 
 
 def _self_check():

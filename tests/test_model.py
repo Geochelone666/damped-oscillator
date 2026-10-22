@@ -62,3 +62,23 @@ class AntiDampingExactSolutionTests(unittest.TestCase):
                 for eps in (1e-6, -1e-6):
                     np.testing.assert_allclose(
                         x_exact(t, z + eps), x_exact(t, z), rtol=1e-4, atol=1e-6)
+
+
+class LargeDampingAccuracyTests(unittest.TestCase):
+    def test_overdamped_closed_form_is_accurate_for_huge_zeta(self):
+        # References from the closed form in 50-digit arithmetic (mpmath).
+        # The naive r1 = -zeta + sqrt(zeta^2 - 1) lost ~6 digits at 1e7.
+        cases = [
+            (1e5, 1e4, 0.9512294245233057),
+            (1e7, 1e4, 0.9995001249791717),
+            (1e7, 1.0, 0.9999999500000037),
+        ]
+        for zeta, t, expected in cases:
+            with self.subTest(zeta=zeta, t=t):
+                self.assertAlmostEqual(float(x_exact(t, zeta)) / expected, 1.0, places=13)
+
+    def test_overdamped_velocity_matches_slow_root_tail(self):
+        zeta = 1e6
+        r1 = -1.0 / (zeta + np.sqrt(zeta**2 - 1))
+        t = 1e5
+        self.assertAlmostEqual(float(v_exact(t, zeta) / x_exact(t, zeta)) / r1, 1.0, places=10)
