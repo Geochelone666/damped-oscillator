@@ -9,6 +9,9 @@ where zeta is the damping ratio and v = x'. Three regimes:
   * critical     (zeta = 1): fastest non-oscillatory return to equilibrium
   * overdamped   (zeta > 1): slow non-oscillatory decay (two real time scales)
 
+Negative zeta (anti-damping) uses the same closed forms with |zeta| deciding
+the regime, so the solutions grow instead of decay.
+
 These exact solutions serve as the ground truth against which the numerical
 integrators in solvers.py are benchmarked.
 """
@@ -35,11 +38,14 @@ def x_exact(t, zeta):
     """
     _validate_zeta(zeta)
     t = np.asarray(t, dtype=float)
-    if zeta < 1.0:
+    if abs(zeta) < 1.0:
         wd = np.sqrt(1.0 - zeta ** 2)
         return np.exp(-zeta * t) * (np.cos(wd * t) + (zeta / wd) * np.sin(wd * t))
-    elif zeta == 1.0:
-        return (1.0 + t) * np.exp(-t)
+    elif abs(zeta) == 1.0:
+        # Double root r = -zeta; zeta = -1 (critical anti-damping) gives
+        # (1 - t) e^t. The old `zeta < 1` branch sent every zeta <= -1 into
+        # sqrt(1 - zeta^2) and returned NaN.
+        return (1.0 + zeta * t) * np.exp(-zeta * t)
     else:
         s = np.sqrt(zeta ** 2 - 1.0)
         r1, r2 = -zeta + s, -zeta - s
@@ -50,14 +56,14 @@ def v_exact(t, zeta):
     """Exact velocity v(t) = dx/dt, obtained by differentiating x_exact."""
     _validate_zeta(zeta)
     t = np.asarray(t, dtype=float)
-    if zeta < 1.0:
+    if abs(zeta) < 1.0:
         # Closed form: differentiating x(t) and using zeta^2 + wd^2 = 1 gives
         #   v(t) = -(1/wd) * exp(-zeta*t) * sin(wd*t).
         wd = np.sqrt(1.0 - zeta ** 2)
         return -(1.0 / wd) * np.exp(-zeta * t) * np.sin(wd * t)
-    elif zeta == 1.0:
-        # d/dt [(1+t)e^{-t}] = e^{-t} - (1+t)e^{-t} = -t*e^{-t}
-        return -t * np.exp(-t)
+    elif abs(zeta) == 1.0:
+        # d/dt [(1+zeta*t)e^{-zeta*t}] = -zeta^2 * t * e^{-zeta*t}
+        return -(zeta ** 2) * t * np.exp(-zeta * t)
     else:
         s = np.sqrt(zeta ** 2 - 1.0)
         r1, r2 = -zeta + s, -zeta - s
