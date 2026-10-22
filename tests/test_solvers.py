@@ -134,3 +134,11 @@ class ConvergenceOrderTests(unittest.TestCase):
                                              v[-1] - v_exact(t[-1], zeta)))
                     observed = np.log2(errs[0] / errs[1])
                     self.assertAlmostEqual(observed, p, delta=0.15)
+
+
+class StepCountOverflowTests(unittest.TestCase):
+    def test_overflowing_step_count_raises_value_error(self):
+        for method in SOLVERS:
+            with self.subTest(method=method):
+                with self.assertRaisesRegex(ValueError, "overflows"):
+                    solve(method, 0.1, 1e-300, 1e300)

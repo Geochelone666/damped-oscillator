@@ -45,7 +45,11 @@ def _step_count(h, t_end):
     # e.g. 20/0.1 = 199.99999999999997 still yields 200 steps). Plain
     # round() silently integrated *past* t_end by up to h/2 whenever t_end
     # was not a multiple of h (e.g. h=0.19, t_end=40 ended at t=40.09).
-    return int(np.floor(t_end / h * (1.0 + 1e-12) + 1e-12))
+    ratio = t_end / h
+    if not np.isfinite(ratio):
+        # e.g. h=1e-300, t_end=1e300: int(inf) raised a bare OverflowError.
+        raise ValueError(f"t_end/h = {t_end!r}/{h!r} overflows; step count must be finite")
+    return int(np.floor(ratio * (1.0 + 1e-12) + 1e-12))
 
 
 def _validate_zeta(zeta):
