@@ -77,7 +77,7 @@ Euler 长区间误差由能量增长主导，这是方法的固有性质；短�
 ```bash
 python3 -m venv --system-site-packages .venv
 source .venv/bin/activate
-python3 -m pip install numpy matplotlib
+python3 -m pip install -r requirements.txt   # Python 3.11–3.13
 python3 model.py      # 解析解自检
 python3 solvers.py    # 求解器自检
 python3 analysis.py   # 收敛阶速查（期望斜率 ≈ 1 / 2 / 4）
@@ -129,12 +129,12 @@ README.md       本文件
 
 ## 8. 自动回归检查
 
-GitHub Actions 在推送到 `main` 和提交 PR 时，使用 Python 3.11、3.12 执行现有的 unittest 测试，以及解析解和求解器自检。测试只依赖 NumPy，不重新生成实验数据或图像，也不对机器相关的 CPU 性能设定阈值。
+GitHub Actions 在推送到 `main` 和提交 PR 时，使用 Python 3.11、3.12、3.13 安装 `requirements.txt` 后执行 unittest 测试、解析解和求解器自检，并从已保存的 CSV 重绘图像（检查绘图脚本可用）。测试不重新生成实验数据，也不对机器相关的 CPU 性能设定阈值。
 
 在仓库根目录复现同一测试命令：
 
 ```bash
-python3 -m pip install 'numpy>=1.26,<3'
+python3 -m pip install -r requirements.txt
 python3 -m unittest discover -s tests -v
 python3 model.py
 python3 solvers.py
