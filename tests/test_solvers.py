@@ -84,3 +84,53 @@ class ZetaValidationTests(unittest.TestCase):
                 t, x, v = solver(-0.1, 0.1, 1.0)
                 self.assertTrue(np.all(np.isfinite(x)))
                 self.assertTrue(np.all(np.isfinite(v)))
+
+
+class GridEndpointTests(unittest.TestCase):
+    def test_grid_never_overshoots_t_end(self):
+        # round(t_end/h) used to integrate past t_end, e.g. h=0.19 on
+        # [0, 40] ended at t=40.09. The grid must stop at the last
+        # multiple of h that does not exceed t_end.
+        for method, solver in SOLVERS.items():
+            for h, t_end in ((0.19, 40.0), (0.22, 40.0), (0.3, 1.0), (0.7, 1.0)):
+                with self.subTest(method=method, h=h, t_end=t_end):
+                    t, x, v = solver(0.1, h, t_end)
+                    self.assertLessEqual(t[-1], t_end + 1e-12)
+                    self.assertGreater(t[-1] + h, t_end)
+                    self.assertEqual(len(t), len(x))
+                    self.assertEqual(len(t), len(v))
+
+    def test_exact_multiples_reach_t_end(self):
+        # Binary floating point makes e.g. 20/0.1 slightly below 200; the
+        # endpoint must still be reached exactly.
+        for h, t_end, n in ((0.1, 20.0, 200), (0.0125, 20.0, 1600),
+                            (0.1, 0.3, 3), (0.05, 100.0, 2000)):
+            with self.subTest(h=h, t_end=t_end):
+                t, _, _ = solve("euler", 0.1, h, t_end)
+                self.assertEqual(len(t), n + 1)
+                self.assertAlmostEqual(t[-1], t_end, places=12)
+
+    def test_step_larger_than_interval_returns_initial_state(self):
+        t, x, v = solve("rk4", 0.1, 1.0, 0.4)
+        np.testing.assert_array_equal(t, [0.0])
+        np.testing.assert_array_equal(x, [1.0])
+        np.testing.assert_array_equal(v, [0.0])
+
+
+class ConvergenceOrderTests(unittest.TestCase):
+    def test_global_order_from_step_halving(self):
+        # Halving h must cut the endpoint error by ~2**p for a p-th order
+        # method; checks the claimed orders 1/2/4 in every damping regime.
+        from model import v_exact, x_exact
+
+        expected = {"euler": 1.0, "verlet": 2.0, "rk4": 4.0}
+        for method, p in expected.items():
+            for zeta in (0.1, 1.0, 2.0):
+                with self.subTest(method=method, zeta=zeta):
+                    errs = []
+                    for h in (0.02, 0.01):
+                        t, x, v = solve(method, zeta, h, 2.0)
+                        errs.append(np.hypot(x[-1] - x_exact(t[-1], zeta),
+                                             v[-1] - v_exact(t[-1], zeta)))
+                    observed = np.log2(errs[0] / errs[1])
+                    self.assertAlmostEqual(observed, p, delta=0.15)

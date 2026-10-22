@@ -41,7 +41,11 @@ def _step_count(h, t_end):
         raise ValueError("h must be finite and positive")
     if not np.isfinite(t_end) or t_end < 0:
         raise ValueError("t_end must be finite and nonnegative")
-    return int(round(t_end / h))
+    # Largest n with n*h <= t_end (up to a relative rounding slack, so that
+    # e.g. 20/0.1 = 199.99999999999997 still yields 200 steps). Plain
+    # round() silently integrated *past* t_end by up to h/2 whenever t_end
+    # was not a multiple of h (e.g. h=0.19, t_end=40 ended at t=40.09).
+    return int(np.floor(t_end / h * (1.0 + 1e-12) + 1e-12))
 
 
 def _validate_zeta(zeta):
