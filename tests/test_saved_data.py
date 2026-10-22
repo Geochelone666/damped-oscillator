@@ -30,8 +30,10 @@ class SavedMetricsTests(unittest.TestCase):
             with self.subTest(method=method, zeta=zeta, h=h):
                 t, x, _ = solve(method, zeta, h, analysis.T_END)
                 err = x - x_exact(t, zeta)
-                np.testing.assert_allclose(float(row["E_inf"]), np.max(np.abs(err)), rtol=1e-9)
-                np.testing.assert_allclose(float(row["E_RMS"]), np.sqrt(np.mean(err ** 2)), rtol=1e-9)
+                # RK4 errors near 1e-10 differ in the 8th digit between
+                # NumPy builds (summation order); stale data differs by >20%.
+                np.testing.assert_allclose(float(row["E_inf"]), np.max(np.abs(err)), rtol=1e-6, atol=1e-14)
+                np.testing.assert_allclose(float(row["E_RMS"]), np.sqrt(np.mean(err ** 2)), rtol=1e-6, atol=1e-14)
 
     def test_readme_convergence_order_claims(self):
         # README section 6: Euler 1.0-1.3, Verlet-type 2.0-2.2, RK4 4.0-4.2.
