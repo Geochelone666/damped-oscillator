@@ -126,3 +126,16 @@ README.md       本文件
 数据列定义及既有相位指标实现的说明见 [data/README.md](data/README.md)。
 
 图像生成不再运行求解器；可直接使用仓库中的 CSV 重绘。重新运行实验后，CPU 计时会变化，因此 fig5 随测量结果变化。原有 fig6 的 h=0.5 轨道一并存入 CSV，新增 fig7 的稳定性扫描由 `experiments/stability_scan.py` 独立生成（ζ=0.1，t≤40）。
+
+## 8. 自动回归检查
+
+GitHub Actions 在推送到 `main` 和提交 PR 时，使用 Python 3.11、3.12 执行现有的 unittest 测试，以及解析解和求解器自检。测试只依赖 NumPy，不重新生成实验数据或图像，也不对机器相关的 CPU 性能设定阈值。
+
+在仓库根目录复现同一测试命令：
+
+```bash
+python3 -m pip install 'numpy>=1.26,<3'
+python3 -m unittest discover -s tests -v
+python3 model.py
+python3 solvers.py
+```
