@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-10-26
+
+### Fixed
+- `data/README.md` still quoted the pre-fix Verlet-type stability-scan range (0.012788 to 0.031739); it now matches `data/stability_scan.csv` (0.006453 to 0.015991).
+
+### Added
+- `tests/test_documented_numbers.py` recomputes the convergence-order table, stability-scan ranges, Euler deviation from amplification theory, energy-drift and cost examples from the saved CSVs and checks the text in `paper/main.tex` and `data/README.md` contains them. The `.docx` draft is not checked.
+
 ## 2026-10-22
 
 ### Fixed
