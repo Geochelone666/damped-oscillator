@@ -76,7 +76,7 @@ continuously through 1 (100%) at h=0.2: the numerical envelope is neutral
 there and grows for h>0.2. This metric does **not** jump by orders of magnitude
 at the boundary. The measured errors run from 0.799355 to 1.248420 and agree
 with the amplification-factor prediction to within 4e-5 absolute error.
-Verlet-type errors increase smoothly from 0.012788 to 0.031739; RK4 errors
+Verlet-type errors increase smoothly from 0.006453 to 0.015991; RK4 errors
 remain below 8e-5, with small nonmonotonic variations from the peak fit.
 
 ## energy_drift.csv and energy_curves.csv
