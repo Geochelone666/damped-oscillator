@@ -109,3 +109,25 @@ small. At zeta=0 the Verlet-type scheme reduces to velocity Verlet, with
 bounded oscillatory relative energy error no larger than h*h/4. RK4 has
 small secular energy loss; its per-step energy multiplier is
 1-h^6/72+h^8/576. Both have errors orders of magnitude below Euler here.
+
+## stability_boundaries.csv
+
+Regenerate separately with `python3 experiments/stability_theory.py`. For each
+of the three methods and zeta in {0, 0.1, 0.5, 1, 2}, `stability.py` predicts
+the stability boundary h* (largest step with spectral radius of the one-step
+amplification matrix <= 1) and the runner then checks the prediction against
+direct solver runs at 0.95*h* and 1.05*h* over t in [0, 600].
+
+| Column | Meaning |
+| --- | --- |
+| method | Solver key: euler, verlet, or rk4. |
+| zeta | Dimensionless damping ratio. |
+| h_boundary | Predicted boundary; empty when the method is unstable for every h (Euler at zeta=0). |
+| euler_boundary_2zeta | Closed form 2*zeta for Euler with 0 < zeta <= 1; empty otherwise. |
+| bounded_5pct_below | True when the solver run at 0.95*h* stays within 10x the exact solution's peak. |
+| bounded_5pct_above | False when the run at 1.05*h* outgrows that ceiling (i.e. the predicted boundary is real). |
+
+Notable values: Euler matches 2*zeta exactly through the underdamped range;
+Verlet-type and RK4 boundaries are not monotone in zeta (Verlet-type dips to
+about 1.73 near zeta=0.3 before recovering to 2.0 at zeta=0.5; RK4 peaks
+around 2.95 at zeta=0.1 and falls to 2.62 at zeta=0.5).
