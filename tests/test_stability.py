@@ -173,6 +173,69 @@ class BoundaryTests(unittest.TestCase):
                 self.assertEqual(bool(np.all(np.abs(x) <= ceiling)), expect_bounded)
 
 
+class DispersionTests(unittest.TestCase):
+    """Predicted phase drift vs. the peak-fit metric from analysis.py."""
+
+    def test_predicted_drift_matches_measured_for_euler_and_verlet(self):
+        # analysis.phase_error fits peak-time drift from only ~3 positive
+        # peaks on [0, 20], so the comparison tolerance must cover peak-fit
+        # noise; agreement is nonetheless tight for the low-order methods.
+        from analysis import phase_error
+
+        tolerances = {"euler": 1e-3, "verlet": 4e-4}
+        for method, tol in tolerances.items():
+            for h in (0.1, 0.05, 0.025):
+                with self.subTest(method=method, h=h):
+                    t, x, _ = solve(method, 0.1, h, 20.0)
+                    measured = phase_error(t, x, 0.1)
+                    predicted = stability.period_drift(method, 0.1, h)
+                    self.assertAlmostEqual(measured, predicted, delta=tol)
+
+    def test_rk4_predicted_drift_below_peak_fit_noise(self):
+        # Measured RK4 drift on [0, 20] is O(1e-4) and dominated by peak
+        # interpolation; the prediction must be smaller than that noise.
+        for h in (0.2, 0.1, 0.05):
+            with self.subTest(h=h):
+                self.assertLess(abs(stability.period_drift("rk4", 0.1, h)), 1e-4)
+
+    def test_euler_frequency_error_is_first_order_in_h(self):
+        # The damping term couples into Euler's angle at O(h*zeta), making
+        # its dispersion error O(h) despite the O(h^2) argument of 1+h*lambda.
+        wd = np.sqrt(1.0 - 0.1 ** 2)
+        errs = [abs(stability.numerical_frequency("euler", 0.1, h) - wd) / wd
+                for h in (0.01, 0.001)]
+        ratio = errs[0] / errs[1]
+        self.assertGreater(ratio, 5.0)
+        self.assertLess(ratio, 20.0)
+
+    def test_frequency_convergence_hierarchy(self):
+        # At h=1e-3: Euler O(h) ~ 1e-4, Verlet-type O(h^2) ~ 4e-8, RK4 O(h^4).
+        wd = np.sqrt(1.0 - 0.1 ** 2)
+        bounds = {"euler": 2e-4, "verlet": 1e-7, "rk4": 1e-11}
+        for method, bound in bounds.items():
+            with self.subTest(method=method):
+                err = abs(stability.numerical_frequency(method, 0.1, 1e-3) - wd) / wd
+                self.assertLess(err, bound)
+
+    def test_euler_frequency_identity_at_h_equals_zeta(self):
+        # metrics.csv shows identical euler phase_slope at h=0.1 and h=0.2
+        # for zeta=0.1. That is not stale data: arg(1+h*lambda)/h at h=zeta
+        # equals the value at h=2*zeta exactly (tan double-angle identity).
+        for zeta in (0.05, 0.1, 0.3):
+            with self.subTest(zeta=zeta):
+                self.assertAlmostEqual(
+                    stability.numerical_frequency("euler", zeta, zeta),
+                    stability.numerical_frequency("euler", zeta, 2.0 * zeta),
+                    places=12,
+                )
+
+    def test_non_oscillatory_zeta_rejected(self):
+        for zeta in (1.0, 2.0, -1.5):
+            with self.subTest(zeta=zeta):
+                with self.assertRaises(ValueError):
+                    stability.numerical_frequency("euler", zeta, 0.1)
+
+
 class SavedBoundariesTests(unittest.TestCase):
     """data/stability_boundaries.csv must match the theory it records."""
 
@@ -193,6 +256,29 @@ class SavedBoundariesTests(unittest.TestCase):
                 self.assertEqual(row["bounded_5pct_above"], "False")
                 if method == "euler" and 0.0 < zeta <= 1.0:
                     self.assertAlmostEqual(float(row["euler_boundary_2zeta"]), 2.0 * zeta)
+
+
+class SavedDispersionTests(unittest.TestCase):
+    """data/dispersion_check.csv must match recomputed theory and metric."""
+
+    def test_csv_matches_recomputed_drift(self):
+        from analysis import phase_error
+
+        with (DATA / "dispersion_check.csv").open(newline="", encoding="utf-8") as stream:
+            rows = list(csv.DictReader(stream))
+        self.assertEqual(len(rows), 15)  # 3 methods x 5 step sizes
+        for row in rows:
+            method, zeta, h = row["method"], float(row["zeta"]), float(row["h"])
+            with self.subTest(method=method, h=h):
+                predicted = stability.period_drift(method, zeta, h)
+                self.assertAlmostEqual(
+                    float(row["predicted_drift_s_per_period"]), predicted, places=8,
+                )
+                t, x, _ = solve(method, zeta, h, 20.0)
+                measured = phase_error(t, x, zeta)
+                self.assertAlmostEqual(
+                    float(row["measured_drift_s_per_period"]), measured, places=8,
+                )
 
 
 if __name__ == "__main__":
