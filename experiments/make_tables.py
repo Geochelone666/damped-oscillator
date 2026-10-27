@@ -3,11 +3,14 @@
     python3 experiments/make_tables.py          # print the LaTeX rows
     python3 experiments/make_tables.py --check  # exit 1 if paper/main.tex differs
 
+Paths are relative to the repository, so any working directory works. The script never writes
+files. Input must be 5 finite positive (h, E_inf) points per method and zeta, else ValueError.
 The order is the least-squares slope of log(E_inf) against log(h) over the five
 saved step sizes, per method and damping ratio. Only this table is generated;
 the other numbers in the paper are checked by tests/test_documented_numbers.py.
 """
 import csv
+import math
 import sys
 from pathlib import Path
 
@@ -26,8 +29,13 @@ def orders(metrics_path=ROOT / "data" / "metrics.csv"):
         out[method] = []
         for zeta in ZETAS:
             sel = [r for r in rows if r["method"] == method and float(r["zeta"]) == zeta]
-            slope = np.polyfit(np.log([float(r["h"]) for r in sel]),
-                               np.log([float(r["E_inf"]) for r in sel]), 1)[0]
+            if len(sel) != 5:
+                raise ValueError(f"{method} zeta={zeta}: expected 5 step sizes, found {len(sel)}")
+            hs = [float(r["h"]) for r in sel]
+            es = [float(r["E_inf"]) for r in sel]
+            if not all(math.isfinite(v) and v > 0 for v in hs + es):
+                raise ValueError(f"{method} zeta={zeta}: h and E_inf must be finite and > 0")
+            slope = np.polyfit(np.log(hs), np.log(es), 1)[0]
             out[method].append(float(slope))
     return out
 
@@ -41,7 +49,10 @@ def main(argv):
     rows = latex_rows()
     if "--check" in argv:
         tex = (ROOT / "paper" / "main.tex").read_text(encoding="utf-8")
-        missing = [r for r in rows if r not in tex]
+        start = tex.find("Method & $\\zeta=0.1$")
+        end = tex.find("\\end{tabular}", start)
+        block = [ln.strip() for ln in tex[start:end].splitlines()] if start >= 0 and end > start else []
+        missing = [r for r in rows if r not in block]
         for r in missing:
             print("missing in paper/main.tex:", r)
         return 1 if missing else 0

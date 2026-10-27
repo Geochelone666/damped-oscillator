@@ -30,8 +30,31 @@ class MakeTablesTests(unittest.TestCase):
             for row in make_tables.latex_rows(path):
                 self.assertTrue(row.endswith("2.00 & 2.00 & 2.00 \\\\"), row)
 
+    def _write(self, d, mutate):
+        rows = [{"method": m, "zeta": z, "h": h, "E_inf": 3 * h ** 2}
+                for m, _ in make_tables.METHODS for z in make_tables.ZETAS
+                for h in (0.2, 0.1, 0.05, 0.025, 0.0125)]
+        mutate(rows)
+        path = Path(d) / "m.csv"
+        with path.open("w", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=["method", "zeta", "h", "E_inf"]); w.writeheader(); w.writerows(rows)
+        return path
+
+    def test_bad_input_raises_instead_of_printing_nan(self):
+        cases = {"zero": lambda r: r[4].update(E_inf=0.0), "nan": lambda r: r[4].update(E_inf="nan"),
+                 "missing point": lambda r: r.pop(0)}
+        for name, mutate in cases.items():
+            with self.subTest(name), tempfile.TemporaryDirectory() as d:
+                with self.assertRaises(ValueError):
+                    make_tables.latex_rows(self._write(d, mutate))
+
+    def test_row_order_does_not_matter(self):
+        with tempfile.TemporaryDirectory() as d:
+            self.assertEqual(make_tables.latex_rows(self._write(d, lambda r: r.reverse())),
+                             make_tables.latex_rows(self._write(d, lambda r: None)))
+
     def test_check_flag_passes_on_repo(self):
-        r = subprocess.run([sys.executable, str(ROOT / "experiments" / "make_tables.py"), "--check"])
+        r = subprocess.run([sys.executable, str(ROOT / "experiments" / "make_tables.py"), "--check"], cwd="/")
         self.assertEqual(r.returncode, 0)
 
 
