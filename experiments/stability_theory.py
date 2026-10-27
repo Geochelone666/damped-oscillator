@@ -20,6 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 import stability
+from analysis import phase_error
 from model import x_exact
 from solvers import SOLVERS
 
@@ -27,6 +28,10 @@ ZETAS = (0.0, 0.1, 0.5, 1.0, 2.0)
 T_END = 600.0
 COLUMNS = ("method", "zeta", "h_boundary", "euler_boundary_2zeta",
            "bounded_5pct_below", "bounded_5pct_above")
+DISPERSION_ZETA = 0.1
+DISPERSION_H = (0.2, 0.1, 0.05, 0.025, 0.0125)
+DISPERSION_COLUMNS = ("method", "zeta", "h", "predicted_drift_s_per_period",
+                      "measured_drift_s_per_period")
 
 
 def _is_bounded(method, zeta, h):
@@ -58,6 +63,25 @@ def main():
         writer.writerow(COLUMNS)
         writer.writerows(rows)
     print(f"Saved {len(rows)} rows to {path}")
+
+    # Dispersion cross-check: predicted per-period peak drift vs. the
+    # peak-fit metric on the same [0, 20] grid used by metrics.csv.
+    dispersion = []
+    for method in SOLVERS:
+        for h in DISPERSION_H:
+            t, x, _ = SOLVERS[method](DISPERSION_ZETA, h, 20.0)
+            predicted = stability.period_drift(method, DISPERSION_ZETA, h)
+            measured = phase_error(t, x, DISPERSION_ZETA)
+            dispersion.append((method, DISPERSION_ZETA, h,
+                               f"{predicted:.9g}", f"{measured:.9g}"))
+            print(f"{method:>6} h={h:g} predicted_drift={predicted:.6g} "
+                  f"measured_drift={measured:.6g}")
+    path = ROOT / "data" / "dispersion_check.csv"
+    with path.open("w", newline="", encoding="utf-8") as stream:
+        writer = csv.writer(stream)
+        writer.writerow(DISPERSION_COLUMNS)
+        writer.writerows(dispersion)
+    print(f"Saved {len(dispersion)} rows to {path}")
 
 
 if __name__ == "__main__":

@@ -156,6 +156,41 @@ def stability_boundary(method, zeta, h_lo=1e-3, h_hi=10.0, tol=1e-10):
     return 0.5 * (h_lo + h_hi)
 
 
+def numerical_frequency(method, zeta, h):
+    """Angular frequency of the numerical oscillation mode (underdamped).
+
+    The amplification matrix of an oscillatory run has a complex eigenpair
+    lambda = rho * exp(+-i*theta); the numerical scheme advances the phase by
+    theta per step, so its frequency is theta / h. The phase drift per period
+    measured by analysis.phase_error is (2*pi / w_num - 2*pi / w_exact),
+    i.e. the difference between numerical and exact periods.
+
+    Returns NaN when the eigenvalues are real (no oscillation, e.g. Euler far
+    above its stability boundary) or for |zeta| >= 1.
+    """
+    if not np.isfinite(zeta) or abs(zeta) >= 1.0:
+        raise ValueError(f"numerical_frequency needs |zeta| < 1 (underdamped); got {zeta!r}")
+    eigs = np.linalg.eigvals(amplification_matrix(method, zeta, h))
+    osc = eigs[np.abs(eigs.imag) > 1e-15]
+    if len(osc) == 0:
+        return np.nan
+    return float(abs(np.angle(osc[0])) / h)
+
+
+def period_drift(method, zeta, h):
+    """Predicted peak-time drift per oscillation period, in seconds.
+
+    The exact period is T = 2*pi / wd with wd = sqrt(1 - zeta^2); the
+    numerical period is 2*pi / w_num. A positive value means numerical peaks
+    fall behind the exact ones (numerical frequency too low).
+    """
+    w_num = numerical_frequency(method, zeta, h)
+    if not np.isfinite(w_num):
+        return np.nan
+    wd = np.sqrt(1.0 - zeta ** 2)
+    return 2.0 * np.pi / w_num - 2.0 * np.pi / wd
+
+
 def all_boundaries(zetas=(0.0, 0.1, 0.5, 1.0, 2.0)):
     """Boundary h for every (method, zeta); NaN where no bracket exists."""
     return {
@@ -177,6 +212,15 @@ def _self_check():
     # Verlet at zeta=0: h* = 2; RK4 at zeta=0: h* = 2*sqrt(2).
     assert abs(stability_boundary("verlet", 0.0) - 2.0) < 1e-8
     assert abs(stability_boundary("rk4", 0.0) - 2.0 * np.sqrt(2.0)) < 1e-8
+    # Numerical frequency approaches the exact wd as h -> 0, at rates
+    # matching each method's dispersion order: Euler's relative error is
+    # O(h) (the damping term couples in at first order), Verlet-type O(h^2),
+    # RK4 O(h^4).
+    wd = np.sqrt(1.0 - 0.1 ** 2)
+    bounds = {"euler": 2e-4, "verlet": 1e-7, "rk4": 1e-11}
+    for method, bound in bounds.items():
+        err = abs(numerical_frequency(method, 0.1, 1e-3) - wd) / wd
+        assert err < bound, (method, err)
     print("stability.py self-checks: ALL PASSED")
 
 

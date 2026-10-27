@@ -131,3 +131,30 @@ Notable values: Euler matches 2*zeta exactly through the underdamped range;
 Verlet-type and RK4 boundaries are not monotone in zeta (Verlet-type dips to
 about 1.73 near zeta=0.3 before recovering to 2.0 at zeta=0.5; RK4 peaks
 around 2.95 at zeta=0.1 and falls to 2.62 at zeta=0.5).
+
+## dispersion_check.csv
+
+Written by `python3 experiments/stability_theory.py` together with
+stability_boundaries.csv. For zeta=0.1 and the five matrix step sizes it
+compares the per-period peak drift predicted from the amplification matrix
+(`stability.period_drift`: numerical period 2*pi/w_num from the eigenvalue
+angle minus exact period 2*pi/wd) against the peak-fit drift measured by
+`analysis.phase_error` on the same [0, 20] grid used by metrics.csv.
+
+| Column | Meaning |
+| --- | --- |
+| method | Solver key: euler, verlet, or rk4. |
+| zeta | Damping ratio (fixed 0.1). |
+| h | Integration time step. |
+| predicted_drift_s_per_period | Theory prediction, seconds per period. |
+| measured_drift_s_per_period | Peak-fit measurement, seconds per period. |
+
+Prediction and measurement agree to ~1e-6 for Euler and ~1e-4 for
+Verlet-type; RK4's prediction (<= 8e-5) is below the peak-fit noise floor,
+so only an upper bound is meaningful there.
+
+Note: the identical Euler phase_slope values at h=0.1 and h=0.2 in
+metrics.csv are not stale data. For explicit Euler, arg(1+h*lambda)/h at
+h=zeta equals the value at h=2*zeta exactly (tan double-angle identity), so
+zeta=0.1 gives the same numerical frequency at h=0.1 and h=0.2. Guarded by
+DispersionTests.test_euler_frequency_identity_at_h_equals_zeta.
