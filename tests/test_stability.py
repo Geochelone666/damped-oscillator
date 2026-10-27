@@ -275,6 +275,42 @@ class EnvelopeTests(unittest.TestCase):
             stability.numerical_decay_rate("euler", 1.0, 0.1)
 
 
+class PowerBoundednessTests(unittest.TestCase):
+    """rho(M) <= 1 is necessary, not sufficient, for bounded orbits."""
+
+    @staticmethod
+    def _norm_pow(method, zeta, h, n):
+        M = stability.amplification_matrix(method, zeta, h)
+        return float(np.linalg.norm(np.linalg.matrix_power(M, n), 2))
+
+    def test_jordan_endpoints_are_spectrally_stable_but_grow_linearly(self):
+        for method, zeta in (("euler", 1.0), ("verlet", 0.0), ("rk4", 1.0)):
+            with self.subTest(method=method, zeta=zeta):
+                h = stability.stability_boundary(method, zeta)
+                self.assertLessEqual(stability.spectral_radius(method, zeta, h), 1.0 + 1e-9)
+                n1, n2 = self._norm_pow(method, zeta, h, 1000), self._norm_pow(method, zeta, h, 10000)
+                self.assertGreater(n1, 100.0)
+                self.assertAlmostEqual(n2 / n1, 10.0, delta=0.5)  # linear growth
+
+    def test_interior_points_and_semisimple_endpoints_are_power_bounded(self):
+        for method, zeta, frac in (("euler", 1.0, 0.95), ("verlet", 0.0, 0.95), ("rk4", 1.0, 0.95),
+                                   ("verlet", 0.5, 1.0), ("euler", 2.0, 1.0)):
+            with self.subTest(method=method, zeta=zeta, frac=frac):
+                h = frac * stability.stability_boundary(method, zeta)
+                self.assertLess(self._norm_pow(method, zeta, h, 100000), 50.0)
+
+    def test_undamped_energy_verlet_bounded_rk4_dissipates(self):
+        for h in (0.5, 1.0, 1.5):
+            with self.subTest(h=h):
+                self.assertAlmostEqual(stability.energy_growth_factor("verlet", 0.0, h), 1.0)
+                self.assertLess(stability.energy_growth_factor("rk4", 0.0, h), 1.0)
+                _, x, v = solve("verlet", 0.0, h, 2000.0)
+                e = x ** 2 + v ** 2
+                self.assertLess(float(e.max() / e.min()), 5.0)  # bounded band
+                _, x, v = solve("rk4", 0.0, h, 200.0)
+                self.assertLess(x[-1] ** 2 + v[-1] ** 2, 1.0)
+
+
 class SavedBoundariesTests(unittest.TestCase):
     """data/stability_boundaries.csv must match the theory it records."""
 

@@ -28,9 +28,22 @@ Known closed-form anchors (all verified in tests):
     |lambda|^2 = det(M), so the boundary is exactly h = 2*zeta (0 < zeta <= 1).
     For zeta > 1 the eigenvalues are real and the boundary is instead
     h* = 2*(zeta - sqrt(zeta^2 - 1)) (e.g. 0.5359 at zeta = 2), which falls
-    as zeta grows. Stability here is the non-strict test rho <= 1 (within
-    1e-12); neutral cases such as zeta = 0 for Verlet-type count as stable
-    even though energy is only conserved, not damped. At zeta = 0
+    as zeta grows.
+
+    Definitions. "Spectrally stable" means rho(M) <= 1 (tested within
+    1e-12); it is a necessary condition only. "Power bounded" (numerical
+    orbits stay bounded for all n) additionally requires every eigenvalue
+    on the unit circle to be semisimple. At a boundary h* the matrix can be
+    a nontrivial Jordan block (double eigenvalue +-1), where |M^n| grows
+    linearly: Euler at zeta = 1, h = 2; Verlet-type at zeta = 0, h = 2; RK4
+    at zeta = 1, h ~ 2.785. Those endpoints are spectrally stable but NOT
+    power bounded; h* is the supremum of power-bounded steps, not always a
+    member of the set. Interior points with rho < 1, or simple unit-circle
+    eigenvalues, are power bounded. Energy: det(M) is the per-step multiplier
+    of the oscillatory quadratic form. Verlet-type at zeta = 0 has det = 1
+    (a modified quadratic form is preserved, so x^2 + v^2 oscillates in a
+    bounded band, not exactly conserved); RK4 at zeta = 0 has det < 1 (slow
+    numerical dissipation, see tests). At zeta = 0
     the energy multiplier per step is det(M) = 1 + h^2, the growth law used
     by experiments/energy_drift.py.
   * Verlet-type, zeta = 0: reduces to standard velocity Verlet for the
