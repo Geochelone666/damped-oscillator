@@ -1,0 +1,16 @@
+method,zeta,h_boundary,euler_boundary_2zeta,bounded_5pct_below,bounded_5pct_above
+euler,0.0,,,,
+euler,0.1,0.2000000000,0.2,True,False
+euler,0.5,1.0000000000,1.0,True,False
+euler,1.0,2.0000000000,2.0,True,False
+euler,2.0,0.5358983849,,True,False
+verlet,0.0,2.0000000000,,True,False
+verlet,0.1,1.8435120421,,True,False
+verlet,0.5,2.0000000000,,True,False
+verlet,1.0,1.0000000000,,True,False
+verlet,2.0,0.5000000000,,True,False
+rk4,0.0,2.8284271248,,True,False
+rk4,0.1,2.9508529575,,True,False
+rk4,0.5,2.6225424918,,True,False
+rk4,1.0,2.7852935632,,True,False
+rk4,2.0,0.7463171610,,True,False
