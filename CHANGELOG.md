@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- `experiments/make_tables.py` prints the convergence-order table rows for `paper/main.tex` from `data/metrics.csv`; `--check` exits 1 if the paper differs. Only this one table is generated, and only for the saved metrics table (exactly 5 distinct step sizes per method and zeta; anything else raises ValueError). It is not a general convergence estimator. Tests: `tests/test_make_tables.py` (paper rows, an exact power-law hand case, and the check flag).
+
 ## 2026-10-26
 
 ### Fixed
