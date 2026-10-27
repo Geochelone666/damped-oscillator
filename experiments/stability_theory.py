@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 import stability
-from analysis import phase_error
+from analysis import envelope_decay_rate, phase_error
 from model import x_exact
 from solvers import SOLVERS
 
@@ -32,6 +32,8 @@ DISPERSION_ZETA = 0.1
 DISPERSION_H = (0.2, 0.1, 0.05, 0.025, 0.0125)
 DISPERSION_COLUMNS = ("method", "zeta", "h", "predicted_drift_s_per_period",
                       "measured_drift_s_per_period")
+ENVELOPE_COLUMNS = ("method", "zeta", "h", "predicted_zeta_num",
+                    "measured_zeta_fit", "predicted_rel_err")
 
 
 def _is_bounded(method, zeta, h):
@@ -82,6 +84,26 @@ def main():
         writer.writerow(DISPERSION_COLUMNS)
         writer.writerows(dispersion)
     print(f"Saved {len(dispersion)} rows to {path}")
+
+    # Envelope cross-check: predicted numerical decay rate vs. the
+    # peak-envelope fit on the same grid.
+    envelope = []
+    for method in SOLVERS:
+        for h in DISPERSION_H:
+            t, x, _ = SOLVERS[method](DISPERSION_ZETA, h, 20.0)
+            predicted = stability.numerical_decay_rate(method, DISPERSION_ZETA, h)
+            measured = envelope_decay_rate(t, x)
+            rel_err = stability.envelope_rel_err_prediction(method, DISPERSION_ZETA, h)
+            envelope.append((method, DISPERSION_ZETA, h, f"{predicted:.9g}",
+                             f"{measured:.9g}", f"{rel_err:.9g}"))
+            print(f"{method:>6} h={h:g} predicted_zeta={predicted:.6g} "
+                  f"measured_zeta={measured:.6g} predicted_rel_err={rel_err:.6g}")
+    path = ROOT / "data" / "envelope_check.csv"
+    with path.open("w", newline="", encoding="utf-8") as stream:
+        writer = csv.writer(stream)
+        writer.writerow(ENVELOPE_COLUMNS)
+        writer.writerows(envelope)
+    print(f"Saved {len(envelope)} rows to {path}")
 
 
 if __name__ == "__main__":
