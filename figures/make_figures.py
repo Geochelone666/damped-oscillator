@@ -14,7 +14,13 @@ Generates paper_figures/:
                                        with the solver-validated points from
                                        stability_boundaries.csv overlaid
 
-Run:  python3 figures/make_figures.py (reads only saved CSV data)
+Run:  python3 figures/make_figures.py
+
+Data sources: fig1-fig8 read only the saved CSVs in data/. fig9's boundary
+curves are evaluated from the amplification-matrix theory in stability.py
+(eigenvalue math on 2x2 matrices - no solver runs, so the
+"figures never run the solvers" rule still holds); fig9's overlaid markers
+are read from data/stability_boundaries.csv.
 """
 
 import csv

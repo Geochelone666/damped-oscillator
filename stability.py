@@ -25,7 +25,12 @@ Known closed-form anchors (all verified in tests):
 
   * Euler: M = [[1, h], [-h, 1 - 2*zeta*h]], det(M) = 1 - 2*zeta*h + h^2.
     For 0 < zeta < 1 the eigenvalues are a complex pair with
-    |lambda|^2 = det(M), so the boundary is exactly h = 2*zeta. At zeta = 0
+    |lambda|^2 = det(M), so the boundary is exactly h = 2*zeta (0 < zeta <= 1).
+    For zeta > 1 the eigenvalues are real and the boundary is instead
+    h* = 2*(zeta - sqrt(zeta^2 - 1)) (e.g. 0.5359 at zeta = 2), which falls
+    as zeta grows. Stability here is the non-strict test rho <= 1 (within
+    1e-12); neutral cases such as zeta = 0 for Verlet-type count as stable
+    even though energy is only conserved, not damped. At zeta = 0
     the energy multiplier per step is det(M) = 1 + h^2, the growth law used
     by experiments/energy_drift.py.
   * Verlet-type, zeta = 0: reduces to standard velocity Verlet for the
