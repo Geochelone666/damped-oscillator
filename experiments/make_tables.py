@@ -5,7 +5,8 @@
 
 Paths are relative to the repository, so any working directory works. The script never writes
 files. Input must be 5 finite positive (h, E_inf) points per method and zeta, else ValueError.
-The order is the least-squares slope of log(E_inf) against log(h) over the five
+This is not a general convergence estimator: it only reads the saved metrics table, whose contract
+(data/README.md) is exactly 5 step sizes per method and zeta. The order is the least-squares slope of log(E_inf) against log(h) over the five
 saved step sizes, per method and damping ratio. Only this table is generated;
 the other numbers in the paper are checked by tests/test_documented_numbers.py.
 """
@@ -35,6 +36,8 @@ def orders(metrics_path=ROOT / "data" / "metrics.csv"):
             es = [float(r["E_inf"]) for r in sel]
             if not all(math.isfinite(v) and v > 0 for v in hs + es):
                 raise ValueError(f"{method} zeta={zeta}: h and E_inf must be finite and > 0")
+            if len(set(hs)) != 5:
+                raise ValueError(f"{method} zeta={zeta}: step sizes must be 5 distinct values")
             slope = np.polyfit(np.log(hs), np.log(es), 1)[0]
             out[method].append(float(slope))
     return out

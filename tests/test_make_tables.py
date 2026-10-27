@@ -42,7 +42,8 @@ class MakeTablesTests(unittest.TestCase):
 
     def test_bad_input_raises_instead_of_printing_nan(self):
         cases = {"zero": lambda r: r[4].update(E_inf=0.0), "nan": lambda r: r[4].update(E_inf="nan"),
-                 "missing point": lambda r: r.pop(0)}
+                 "missing point": lambda r: r.pop(0),
+                 "duplicate h": lambda r: r[1].update(h=r[0]["h"])}
         for name, mutate in cases.items():
             with self.subTest(name), tempfile.TemporaryDirectory() as d:
                 with self.assertRaises(ValueError):
