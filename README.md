@@ -85,7 +85,7 @@ python3 experiments/run_all.py  # 跑完整 45 组实验，保存 data/*.csv
 python3 experiments/stability_scan.py # ζ=0.1，h=0.2 附近的独立稳定性扫描
 python3 experiments/stability_theory.py # 理论稳定边界 vs 求解器实测（stability.py）
 python3 experiments/energy_drift.py # ζ=0，长时间能量漂移实验（t≤100）
-python3 figures/make_figures.py # 仅读取 CSV，生成 paper_figures/ 下 8 张图
+python3 figures/make_figures.py # 仅读取 CSV，生成 paper_figures/ 下 9 张图
 python3 plots.py                # 兼容旧命令，同样仅读取 CSV
 ```
 
@@ -111,7 +111,7 @@ experiments/run_all.py  保存完整实验矩阵及原有绘图输入
 data/           CSV 数据、列定义与运行环境（见 data/README.md）
 figures/make_figures.py  仅读取 data/*.csv，生成 8 张图
 plots.py        向后兼容的薄封装（调用 figures/make_figures.py）
-paper_figures/  fig1–fig8（见下）
+paper_figures/  fig1–fig9（见下）
 README.md       本文件
 ```
 
@@ -125,6 +125,7 @@ README.md       本文件
 | fig6 | h=0.5 大步长稳定性：Euler 发散，另两者有界但失真 |
 | fig7 | ζ=0.1：包络衰减误差 vs h，标出理论边界 h=2ζ=0.2 |
 | fig8 | ζ=0，h=0.1：相对能量误差 vs t（对数纵轴，t≤100） |
+| fig9 | 理论稳定边界 h*(ζ) 曲线（三方法），叠加 stability_boundaries.csv 中求解器实测验证点 |
 
 数据列定义及既有相位指标实现的说明见 [data/README.md](data/README.md)。
 
