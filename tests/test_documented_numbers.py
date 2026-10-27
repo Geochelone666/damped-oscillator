@@ -160,7 +160,7 @@ class CostAccuracyClaimTests(unittest.TestCase):
         self.assertGreaterEqual(len(ratios), 3)  # only where Euler was measured
         self.assertTrue(all(3.5 <= r <= 5.5 for r in ratios), ratios)
         for text in (_text("paper", "main.tex"), "\n".join(_docx_paragraphs())):
-            self.assertNotIn("3", "".join(re.findall(r"(\d)\W{1,3}6\W+orders", text)))
+            self.assertNotRegex(text, r"3\W{1,6}6\s+orders")
 
     def test_worked_example_costs_are_comparable_and_quoted(self):
         by = self._by_method()
