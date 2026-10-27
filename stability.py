@@ -191,6 +191,34 @@ def period_drift(method, zeta, h):
     return 2.0 * np.pi / w_num - 2.0 * np.pi / wd
 
 
+def numerical_decay_rate(method, zeta, h):
+    """Decay rate of the numerical oscillation mode (underdamped).
+
+    For the complex eigenpair lambda = rho * exp(+-i*theta), peak amplitudes
+    shrink by rho per period, so the fitted envelope follows exp(-zeta_num*t)
+    with zeta_num = -ln(rho) / h. This predicts the zeta_fit values that
+    analysis.envelope_decay_rate measures from peak amplitudes.
+
+    Returns NaN when the eigenvalues are real (no oscillation); raises for
+    |zeta| >= 1, matching numerical_frequency.
+    """
+    if not np.isfinite(zeta) or abs(zeta) >= 1.0:
+        raise ValueError(f"numerical_decay_rate needs |zeta| < 1 (underdamped); got {zeta!r}")
+    eigs = np.linalg.eigvals(amplification_matrix(method, zeta, h))
+    osc = eigs[np.abs(eigs.imag) > 1e-15]
+    if len(osc) == 0:
+        return np.nan
+    return float(-np.log(abs(osc[0])) / h)
+
+
+def envelope_rel_err_prediction(method, zeta, h):
+    """Predicted |zeta_num - zeta| / |zeta|; NaN at zeta = 0 by definition."""
+    zeta_num = numerical_decay_rate(method, zeta, h)
+    if zeta == 0 or not np.isfinite(zeta_num):
+        return np.nan
+    return abs(zeta_num - zeta) / abs(zeta)
+
+
 def all_boundaries(zetas=(0.0, 0.1, 0.5, 1.0, 2.0)):
     """Boundary h for every (method, zeta); NaN where no bracket exists."""
     return {
@@ -221,6 +249,9 @@ def _self_check():
     for method, bound in bounds.items():
         err = abs(numerical_frequency(method, 0.1, 1e-3) - wd) / wd
         assert err < bound, (method, err)
+    # Euler's decay rate vanishes exactly at h = 2*zeta (det M = 1), the
+    # neutral point already recorded in stability_scan.csv.
+    assert abs(numerical_decay_rate("euler", 0.1, 0.2)) < 1e-14
     print("stability.py self-checks: ALL PASSED")
 
 

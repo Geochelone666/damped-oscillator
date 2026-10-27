@@ -158,3 +158,25 @@ metrics.csv are not stale data. For explicit Euler, arg(1+h*lambda)/h at
 h=zeta equals the value at h=2*zeta exactly (tan double-angle identity), so
 zeta=0.1 gives the same numerical frequency at h=0.1 and h=0.2. Guarded by
 DispersionTests.test_euler_frequency_identity_at_h_equals_zeta.
+
+## envelope_check.csv
+
+Written by `python3 experiments/stability_theory.py` together with
+stability_boundaries.csv and dispersion_check.csv. For zeta=0.1 and the five
+matrix step sizes it compares the numerical envelope decay rate predicted
+from the amplification matrix (`stability.numerical_decay_rate`:
+-ln|lambda|/h from the complex eigenpair) against `analysis.envelope_decay_rate`
+fitted from peak amplitudes on the same [0, 20] grid used by metrics.csv.
+
+| Column | Meaning |
+| --- | --- |
+| method | Solver key: euler, verlet, or rk4. |
+| zeta | Damping ratio (fixed 0.1). |
+| h | Integration time step. |
+| predicted_zeta_num | Theory prediction for the fitted decay rate. |
+| measured_zeta_fit | Peak-envelope fit of the solver run. |
+| predicted_rel_err | abs(zeta_num - zeta)/zeta, comparable to zeta_fit_err in metrics.csv. |
+
+Prediction and measurement agree to ~1e-6 across all three methods. At
+h = 2*zeta the predicted Euler decay rate is exactly zero (det M = 1), the
+neutral point behind the 100% fit error recorded in stability_scan.csv.

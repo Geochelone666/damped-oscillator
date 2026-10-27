@@ -236,6 +236,45 @@ class DispersionTests(unittest.TestCase):
                     stability.numerical_frequency("euler", zeta, 0.1)
 
 
+class EnvelopeTests(unittest.TestCase):
+    """Predicted numerical decay rate vs. the peak-envelope fit."""
+
+    def test_predicted_decay_rate_matches_fitted_envelope(self):
+        from analysis import envelope_decay_rate
+
+        tolerances = {"euler": 5e-5, "verlet": 5e-5, "rk4": 1e-4}
+        for method, tol in tolerances.items():
+            for h in (0.1, 0.05, 0.025):
+                with self.subTest(method=method, h=h):
+                    t, x, _ = solve(method, 0.1, h, 20.0)
+                    measured = envelope_decay_rate(t, x)
+                    predicted = stability.numerical_decay_rate(method, 0.1, h)
+                    self.assertAlmostEqual(measured, predicted, delta=tol)
+
+    def test_euler_decay_rate_vanishes_at_neutral_step(self):
+        # h = 2*zeta gives det(M) = 1: peaks neither decay nor grow, the
+        # neutral point of the saved stability scan (100% fit error).
+        for zeta in (0.05, 0.1, 0.3):
+            with self.subTest(zeta=zeta):
+                self.assertAlmostEqual(
+                    stability.numerical_decay_rate("euler", zeta, 2.0 * zeta), 0.0,
+                )
+                self.assertAlmostEqual(
+                    stability.envelope_rel_err_prediction("euler", zeta, 2.0 * zeta), 1.0,
+                )
+
+    def test_envelope_rel_err_nan_at_zero_zeta(self):
+        for method in SOLVERS:
+            with self.subTest(method=method):
+                self.assertTrue(
+                    np.isnan(stability.envelope_rel_err_prediction(method, 0.0, 0.1))
+                )
+
+    def test_non_oscillatory_zeta_rejected(self):
+        with self.assertRaises(ValueError):
+            stability.numerical_decay_rate("euler", 1.0, 0.1)
+
+
 class SavedBoundariesTests(unittest.TestCase):
     """data/stability_boundaries.csv must match the theory it records."""
 
@@ -278,6 +317,29 @@ class SavedDispersionTests(unittest.TestCase):
                 measured = phase_error(t, x, zeta)
                 self.assertAlmostEqual(
                     float(row["measured_drift_s_per_period"]), measured, places=8,
+                )
+
+
+class SavedEnvelopeTests(unittest.TestCase):
+    """data/envelope_check.csv must match recomputed theory and metric."""
+
+    def test_csv_matches_recomputed_decay_rates(self):
+        from analysis import envelope_decay_rate
+
+        with (DATA / "envelope_check.csv").open(newline="", encoding="utf-8") as stream:
+            rows = list(csv.DictReader(stream))
+        self.assertEqual(len(rows), 15)
+        for row in rows:
+            method, zeta, h = row["method"], float(row["zeta"]), float(row["h"])
+            with self.subTest(method=method, h=h):
+                predicted = stability.numerical_decay_rate(method, zeta, h)
+                self.assertAlmostEqual(
+                    float(row["predicted_zeta_num"]), predicted, places=8,
+                )
+                t, x, _ = solve(method, zeta, h, 20.0)
+                measured = envelope_decay_rate(t, x)
+                self.assertAlmostEqual(
+                    float(row["measured_zeta_fit"]), measured, places=8,
                 )
 
 
