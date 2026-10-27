@@ -10,6 +10,9 @@ Generates paper_figures/:
   fig6_stability_h05.png           -- zeta=0.1, h=0.5: Euler blows up, others survive
   fig7_stability_boundary.png      -- zeta=0.1: envelope error near h=0.2
   fig8_energy_drift.png            -- zeta=0, h=0.1: relative energy error vs t
+  fig9_stability_curves.png        -- predicted boundary h*(zeta) per method,
+                                       with the solver-validated points from
+                                       stability_boundaries.csv overlaid
 
 Run:  python3 figures/make_figures.py (reads only saved CSV data)
 """
@@ -33,6 +36,8 @@ def _read_csv(name):
         runner = ("stability_scan.py" if name == "stability_scan.csv" else "run_all.py")
         if name in ("energy_drift.csv", "energy_curves.csv"):
             runner = "energy_drift.py"
+        if name == "stability_boundaries.csv":
+            runner = "stability_theory.py"
         raise FileNotFoundError(
             f"Missing {path}. Run python3 experiments/{runner} first.")
     with path.open(newline="", encoding="utf-8") as stream:
@@ -222,6 +227,45 @@ def _energy_drift():
     plt.close(fig)
 
 
+def _stability_curves():
+    """Render fig9: predicted h*(zeta) curves vs solver-validated points.
+
+    The dense curves come from stability.stability_boundary (eigenvalue
+    computations only, no solver runs, per the figures-do-not-run-solvers
+    rule); the overlaid markers are the solver-validated rows of
+    stability_boundaries.csv.
+    """
+    import sys
+
+    sys.path.insert(0, str(ROOT))
+    import stability
+
+    validated = {}
+    for row in _read_csv("stability_boundaries.csv"):
+        if row["h_boundary"]:
+            validated.setdefault(row["method"], []).append(
+                (float(row["zeta"]), float(row["h_boundary"])))
+    labels = {"euler": "Euler", "verlet": "Velocity-Verlet-type", "rk4": "RK4"}
+    zeta_grid = np.linspace(0.01, 2.0, 60)
+    fig, ax = plt.subplots(figsize=(8, 4.5))
+    for method, label in labels.items():
+        curve = [stability.stability_boundary(method, float(z)) for z in zeta_grid]
+        ax.plot(zeta_grid, curve, color=COLORS[method], lw=1.4, label=label)
+        pts = np.array(sorted(validated[method])).T
+        ax.plot(pts[0], pts[1], "o", color=COLORS[method], ms=5, mfc="none")
+    ax.plot([], [], "o", color="0.3", ms=5, mfc="none",
+            label="solver-validated (data/stability_boundaries.csv)")
+    ax.set_xlabel(r"damping ratio $\zeta$")
+    ax.set_ylabel(r"stability boundary $h^*$")
+    ax.set_title("Predicted stability boundaries (amplification-matrix spectral radius)\n"
+                 "boundaries are not monotone in $\zeta$ for Verlet-type / RK4")
+    ax.set_ylim(0, 3.2)
+    ax.legend(fontsize=9)
+    fig.tight_layout()
+    fig.savefig(OUTDIR / "fig9_stability_curves.png")
+    plt.close(fig)
+
+
 def main():
     results, labels, zetas, h_values, trajectories, exact = _load_inputs()
     OUTDIR.mkdir(parents=True, exist_ok=True)
@@ -240,6 +284,7 @@ def main():
     _stability(labels, trajectories, exact)
     _stability_boundary()
     _energy_drift()
+    _stability_curves()
     print("Done. Figures in paper_figures/:")
 
     import os
