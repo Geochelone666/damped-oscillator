@@ -10,6 +10,7 @@ import csv
 from pathlib import Path
 import re
 import unittest
+import math
 import zipfile
 
 import numpy as np
@@ -132,3 +133,40 @@ class DocxNumbersMatchCsvTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class CostAccuracyClaimTests(unittest.TestCase):
+    """The 'orders of magnitude at equal cost' claim, checked against saved cpu_time."""
+
+    def _by_method(self):
+        out = {}
+        for r in _rows("metrics.csv"):
+            if float(r["zeta"]) == 0.1:
+                out.setdefault(r["method"], []).append(
+                    (float(r["cpu_time"]), float(r["E_inf"]), float(r["h"])))
+        return {k: sorted(v) for k, v in out.items()}
+
+    def test_orders_of_magnitude_in_overlapping_cost_range(self):
+        import math
+        by = self._by_method()
+        eul = by["euler"]
+        ratios = []
+        for cost, err, _h in by["rk4"]:
+            for (c0, e0, _), (c1, e1, _) in zip(eul, eul[1:]):
+                if c0 <= cost <= c1:  # interpolate Euler error at RK4's cost, log-log
+                    t = (math.log(cost) - math.log(c0)) / (math.log(c1) - math.log(c0))
+                    e = math.exp(math.log(e0) + t * (math.log(e1) - math.log(e0)))
+                    ratios.append(math.log10(e / err))
+        self.assertGreaterEqual(len(ratios), 3)  # only where Euler was measured
+        self.assertTrue(all(3.5 <= r <= 5.5 for r in ratios), ratios)
+        for text in (_text("paper", "main.tex"), "\n".join(_docx_paragraphs())):
+            self.assertNotRegex(text, r"3\W{1,6}6\s+orders")
+
+    def test_worked_example_costs_are_comparable_and_quoted(self):
+        by = self._by_method()
+        c_rk = next(c for c, _, h in by["rk4"] if h == 0.05)
+        c_eu = next(c for c, _, h in by["euler"] if h == 0.0125)
+        self.assertLess(abs(math.log(c_rk / c_eu)), math.log(1.25))
+        for text in (_text("paper", "main.tex"), "\n".join(_docx_paragraphs())):
+            self.assertRegex(text, r"0\.9\W{0,3}\s*ms")
+            self.assertNotRegex(text, r"1\.7\W{0,3}\s*ms of compute")

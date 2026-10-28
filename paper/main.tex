@@ -227,8 +227,8 @@ solutions overlay the exact curve.}
 \end{figure}
 
 On cost versus accuracy (Fig.~\ref{fig:cost}), RK4 dominates: at equal
-wall-clock cost it is $3$--$6$ orders of magnitude more accurate than
-Euler (e.g.\ at $\zeta=0.1$, for $\sim$1.7\,ms of compute, RK4 at
+wall-clock cost it is roughly $4$--$5$ orders of magnitude more accurate than
+Euler where the measured costs overlap (e.g.\ at $\zeta=0.1$, for $\sim$0.9\,ms of compute, RK4 at
 $h=0.05$ gives $E_\infty=1.9\times10^{-7}$ while Euler at $h=0.0125$
 gives $2.4\times10^{-2}$). The Verlet-type scheme is the economical
 middle ground; Euler is defensible only when very coarse accuracy
@@ -239,7 +239,8 @@ Fig.~\ref{fig:cost} vary between runs.
 \centering
 \includegraphics[width=0.85\textwidth]{../paper_figures/fig5_cost_vs_error.png}
 \caption{Wall-clock cost versus $E_\infty$ at $\zeta=0.1$. RK4 gives
-$3$--$6$ orders of magnitude better accuracy at equal cost.}
+roughly $4$--$5$ orders of magnitude better accuracy at equal cost
+where the measured costs overlap.}
 \label{fig:cost}
 \end{figure}
 
