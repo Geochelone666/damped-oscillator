@@ -129,9 +129,20 @@ def run_case(method, zeta, h, t_end=T_END):
     t, x, v = get_solver(method)(zeta, h, t_end)
     x_ref = x_exact(t, zeta)
     err = x - x_ref
+    max_error = float(np.max(np.abs(err)))
+    # Normalize finite errors before squaring: their RMS is bounded by
+    # max_error, even when individual squares overflow or underflow.
+    if max_error == 0.0:
+        rms_error = 0.0
+    elif np.isfinite(max_error):
+        rms_error = max_error * float(np.sqrt(np.mean((err / max_error) ** 2)))
+    else:
+        # Preserve non-finite trajectories as non-finite, not a fabricated
+        # finite result. NaN remains unknown; infinity stays infinite.
+        rms_error = max_error
     metrics = {
-        "E_inf": float(np.max(np.abs(err))),
-        "E_RMS": float(np.sqrt(np.mean(err ** 2))),
+        "E_inf": max_error,
+        "E_RMS": rms_error,
         "cpu_s": measure_cpu(method, zeta, h, t_end),
     }
     if abs(zeta) < 1.0:
