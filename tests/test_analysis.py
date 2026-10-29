@@ -133,3 +133,43 @@ class PhaseErrorDomainTests(unittest.TestCase):
         self.assertNotIn("phase_err", metrics)
         self.assertNotIn("envelope_rel_err", metrics)
         self.assertTrue(np.isfinite(metrics["E_inf"]))
+
+
+class ScaledRmsTests(unittest.TestCase):
+    def test_finite_large_anti_damping_error_has_finite_rms(self):
+        from solvers import solve_euler
+        t, x, _ = solve_euler(-2, 0.1, 100)
+        err = x - x_exact(t, -2)
+        scale = np.max(np.abs(err))
+        expected = scale * np.sqrt(np.mean((err / scale) ** 2))
+        with warnings.catch_warnings():
+            warnings.simplefilter('error', RuntimeWarning)
+            metrics = run_case('euler', -2, 0.1, 100)
+        self.assertTrue(np.isfinite(metrics['E_RMS']))
+        self.assertAlmostEqual(metrics['E_RMS'] / expected, 1., places=14)
+
+    def test_rms_scales_without_overflow_or_underflow(self):
+        from unittest.mock import patch
+        for scale in (1e-200, 1., 1e200):
+            with self.subTest(scale=scale):
+                t = np.array([0., 1., 2.])
+                fake_solver = lambda *args: (t, np.array([0., 3., 4.]) * scale, t)
+                with patch('analysis.get_solver', return_value=fake_solver), patch('analysis.x_exact', return_value=np.zeros(3)):
+                    with warnings.catch_warnings():
+                        warnings.simplefilter('error', RuntimeWarning)
+                        metrics = run_case('euler', 2., 1., 2.)
+                self.assertAlmostEqual(metrics['E_RMS'] / scale, 5. / np.sqrt(3.), places=14)
+
+    def test_initial_point_only_has_zero_rms(self):
+        self.assertEqual(run_case('euler', 2., .1, 0.)['E_RMS'], 0.)
+
+    def test_nonfinite_error_is_not_replaced_with_finite_value(self):
+        from unittest.mock import patch
+        for value in (np.inf, np.nan):
+            with self.subTest(value=value):
+                t = np.array([0., 1.])
+                fake_solver = lambda *args: (t, np.array([0., value]), t)
+                with patch('analysis.get_solver', return_value=fake_solver), patch('analysis.x_exact', return_value=np.zeros(2)):
+                    metrics = run_case('euler', 2., 1., 1.)
+                self.assertEqual(np.isinf(metrics['E_RMS']), np.isinf(value))
+                self.assertEqual(np.isnan(metrics['E_RMS']), np.isnan(value))
